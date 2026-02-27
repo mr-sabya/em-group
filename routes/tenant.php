@@ -8,7 +8,6 @@ use App\Http\Middleware\IdentifyTenantByHeader;
 // 1. LIVEWIRE ADMIN PANEL (Domain Based)
 Route::middleware([
     'web',
-    InitializeTenancyByDomain::class,
 ])->prefix('admin')->group(function () {
     Route::get('/', function () {
         return "Welcome to the admin dashboard!";
