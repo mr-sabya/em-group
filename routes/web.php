@@ -5,6 +5,11 @@ use Illuminate\Support\Facades\Route;
 
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
+// home page
+Route::get('/', function() {
+    return view('frontend.home.index');
+})->name('home');
+
 // login
 Route::get('/login', function () {
     return "Login Page";
