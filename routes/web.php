@@ -15,7 +15,7 @@ Route::group([
     'prefix' => '/{tenant}', // This captures the tenant ID
     'middleware' => [
         'web',
-
+        'auth',
         InitializeTenancyByPath::class, // This initializes the tenant based on the URL
         SetDefaultTenantParameter::class // This sets the default tenant parameter for URL generation
     ],
