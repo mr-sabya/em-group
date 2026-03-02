@@ -84,7 +84,7 @@
 
                 <!-- Primary Action -->
                 <div class="d-grid mb-5">
-                    <a href="{{ route('admin.dashboard') }}" class="btn btn-admin d-flex align-items-center justify-content-center gap-2">
+                    <a href="{{ route('dashboard') }}" class="btn btn-admin d-flex align-items-center justify-content-center gap-2">
                         <i class="bi bi-shield-lock"></i>
                         Super Admin Login
                     </a>

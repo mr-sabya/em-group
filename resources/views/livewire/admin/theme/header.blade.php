@@ -6,19 +6,19 @@
                 <div class="navbar-brand-box horizontal-logo">
                     <a href="index.html" class="logo logo-dark">
                         <span class="logo-sm">
-                            <img src="{{ url('assets/backend/images/logo-sm.png') }}" alt="" height="22">
+                            <img src="{{ url('assets/images/logo-sm.png') }}" alt="" height="22">
                         </span>
                         <span class="logo-lg">
-                            <img src="{{ url('assets/backend/images/logo-dark.png') }}" alt="" height="25">
+                            <img src="{{ url('assets/images/logo-dark.png') }}" alt="" height="25">
                         </span>
                     </a>
 
                     <a href="index.html" class="logo logo-light">
                         <span class="logo-sm">
-                            <img src="{{ url('assets/backend/images/logo-sm.png') }}" alt="" height="22">
+                            <img src="{{ url('assets/images/logo-sm.png') }}" alt="" height="22">
                         </span>
                         <span class="logo-lg">
-                            <img src="{{ url('assets/backend/images/logo-light.png') }}" alt="" height="25">
+                            <img src="{{ url('assets/images/logo-light.png') }}" alt="" height="25">
                         </span>
                     </a>
                 </div>
@@ -37,6 +37,11 @@
             </div>
 
             <div class="d-flex align-items-center">
+
+                <!-- INSERT TENANT SWITCHER HERE -->
+                @if(\App\Models\Tenant::count() > 0)
+                <livewire:admin.components.tenant-switcher />
+                @endif
 
                 <div class="d-md-none topbar-head-dropdown header-item">
                     <button type="button" class="btn btn-icon btn-topbar btn-ghost-dark rounded-circle"
@@ -307,7 +312,7 @@
                         aria-haspopup="true" aria-expanded="false">
                         <span class="d-flex align-items-center">
                             <img class="rounded-circle header-profile-user"
-                                src="{{ url('assets/images/users/avatar-1.jpg') }}" alt="Header Avatar">
+                                src="{{ url('assets/backend/images/users/avatar-1.jpg') }}" alt="Header Avatar">
                             <span class="text-start ms-xl-2">
                                 <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">Edward
                                     Diana</span>

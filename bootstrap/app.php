@@ -10,14 +10,6 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         using: function () {
-            // 1. Load Admin Routes FIRST
-            // This ensures localhost:8000/admin is matched here 
-            // and NOT mistaken for a tenant ID
-            Route::middleware('web')
-                ->prefix('admin')
-                ->name('admin.')
-                ->group(base_path('routes/admin.php'));
-
             // 2. Load API Routes
             Route::middleware('api')
                 ->prefix('api')
@@ -36,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'tenant.api' => \App\Http\Middleware\IdentifyTenantByHeader::class,
         ]);
+        
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

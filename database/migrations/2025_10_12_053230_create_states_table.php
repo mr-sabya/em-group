@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('states', function (Blueprint $table) {
             $table->id();
-            $table->string('tenant_id'); // Foreign key to tenants.id
+            $table->foreignId('country_id')->constrained('countries')->onDelete('cascade');
             $table->string('name');
-            $table->decimal('price', 10, 2);
+            $table->string('code', 5)->nullable(); // e.g., CA, NY, ON
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            $table->unique(['country_id', 'name']); // Prevent duplicate states within a country
         });
     }
 
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('states');
     }
 };
