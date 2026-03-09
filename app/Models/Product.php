@@ -8,12 +8,12 @@ use Illuminate\Support\Str;
 use App\Enums\ProductType;
 use App\Enums\VolumeUnit;
 use App\Enums\WeightUnit;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id', // Added for multi-tenancy
@@ -88,7 +88,7 @@ class Product extends Model
         static::addGlobalScope('tenant', function (Builder $builder) {
             $activeTenantId = session('active_tenant_id');
             if ($activeTenantId) {
-                $builder->where('tenant_id', $activeTenantId);
+                $builder->where($builder->qualifyColumn('tenant_id'), session('active_tenant_id'));
             }
         });
 
@@ -129,8 +129,12 @@ class Product extends Model
 
     public function categories()
     {
+        $tenantId = session('active_tenant_id');
+
         return $this->belongsToMany(Category::class, 'category_product')
-            ->withPivot('tenant_id');
+            ->withPivot('tenant_id')
+            ->where('categories.tenant_id', $tenantId)
+            ->wherePivot('tenant_id', $tenantId);
     }
 
     public function images()
@@ -155,7 +159,8 @@ class Product extends Model
 
     public function deals()
     {
-        return $this->belongsToMany(Deal::class);
+        return $this->belongsToMany(Deal::class, 'deal_product')
+            ->where('deals.tenant_id', session('active_tenant_id'));
     }
 
     public function tags()
@@ -184,8 +189,15 @@ class Product extends Model
 
     public function getEffectivePriceAttribute()
     {
+        if (!$this->exists) {
+            return $this->sale_price ?? $this->regular_price;
+        }
+
         $basePrice = $this->sale_price ?? $this->regular_price;
-        $activeDeal = $this->deals()->where('is_active', true)->first();
+
+        $activeDeal = $this->deals()
+            ->where('deals.is_active', true)
+            ->first();
 
         if ($activeDeal) {
             if ($activeDeal->type === 'percentage') {
@@ -213,5 +225,19 @@ class Product extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+
+    public function syncCategoriesWithTenant(array $categoryIds)
+    {
+        $tenantId = session('active_tenant_id');
+
+        $data = [];
+
+        foreach ($categoryIds as $id) {
+            $data[$id] = ['tenant_id' => $tenantId];
+        }
+
+        $this->categories()->sync($data);
     }
 }

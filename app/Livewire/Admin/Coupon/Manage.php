@@ -1,14 +1,12 @@
 <?php
 
-namespace App\Livewire\Coupon;
+namespace App\Livewire\Admin\Coupon;
 
 use Livewire\Component;
 use App\Models\Coupon;
 use App\Enums\CouponType;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
-use Illuminate\Routing\Redirector;
-use Illuminate\Http\RedirectResponse;
 
 class Manage extends Component
 {
@@ -102,10 +100,13 @@ class Manage extends Component
         ]);
     }
 
-    public function saveCoupon(): Redirector|RedirectResponse
+    /**
+     * @return void
+     */
+    public function saveCoupon()
     {
         $this->validate($this->getValidationRules());
-
+        $message = '';
         $data = [
             'code' => $this->code,
             'description' => $this->description,
@@ -123,20 +124,21 @@ class Manage extends Component
         if ($this->isEditing) {
             $coupon = Coupon::find($this->couponId);
             $coupon->update($data);
-            session()->flash('message', 'Coupon updated successfully!');
+            $message = 'Coupon updated successfully!';
         } else {
             $coupon = Coupon::create($data);
-            session()->flash('message', 'Coupon created successfully!');
+            $message = 'Coupon created successfully!';
         }
 
         // Removed syncing relationships here as they are managed via dedicated assignment components.
+        session()->flash('message', $message);
 
-        return redirect()->route('coupons.index');
+        $this->redirect(route('product.coupons.index'), navigate: true);
     }
 
     public function render()
     {
         // No need to fetch any relational data here.
-        return view('livewire.coupon.manage');
+        return view('livewire.admin.coupon.manage');
     }
 }

@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use App\Enums\SettingType;
+use App\Traits\BelongsToTenant;
 use Illuminate\Support\Str;
 
 class Setting extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id', // Added
@@ -39,7 +40,7 @@ class Setting extends Model
         static::addGlobalScope('tenant', function (Builder $builder) {
             $activeTenantId = session('active_tenant_id');
             if ($activeTenantId) {
-                $builder->where('tenant_id', $activeTenantId);
+                $builder->where($builder->qualifyColumn('tenant_id'), $activeTenantId);
             }
         });
 

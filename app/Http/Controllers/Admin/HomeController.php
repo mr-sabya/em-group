@@ -10,7 +10,7 @@ class HomeController extends Controller
     //
     public function index()
     {
-        return view('admin.pages.home.index');
+        return view('admin.home.index');
     }
 
 
@@ -18,7 +18,7 @@ class HomeController extends Controller
     // brands page
     public function brands()
     {
-        return view('backend.pages.brand.index');
+        return view('admin.brand.index');
     }
 
     
@@ -26,6 +26,6 @@ class HomeController extends Controller
     // tags page
     public function tags()
     {
-        return view('admin.pages.tag.index');
+        return view('admin.tag.index');
     }
 }

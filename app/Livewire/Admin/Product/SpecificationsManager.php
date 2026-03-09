@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Product;
+namespace App\Livewire\Admin\Product;
 
 use App\Models\Product;
 use App\Models\SpecificationKey;
@@ -83,7 +83,7 @@ class SpecificationsManager extends Component
         // Group existing keys by their group for a cleaner UI
         $availableKeys = SpecificationKey::orderBy('group')->orderBy('id')->get()->groupBy('group');
 
-        return view('livewire.product.specifications-manager', [
+        return view('livewire.admin.product.specifications-manager', [
             'groupedKeys' => $availableKeys,
         ]);
     }

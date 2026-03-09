@@ -1,7 +1,7 @@
-<div class="container mt-4">
+<div>
     <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Manage SEO for "{{ $product->name }}"</h3>
+        <div class="card-header bg-primary">
+            <h3 class="mb-0 text-white">Manage SEO for "{{ $product->name }}"</h3>
         </div>
         <div class="card-body">
             @if (session()->has('message'))

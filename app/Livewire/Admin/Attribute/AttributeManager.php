@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Livewire\Attribute;
+namespace App\Livewire\Admin\Attribute;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed; // Added for Computed Property
 use App\Models\Attribute;
 use App\Enums\AttributeDisplayType;
 use Illuminate\Support\Str;
@@ -18,19 +19,19 @@ class AttributeManager extends Component
     public $sortField = 'name';
     public $sortDirection = 'asc';
     public $perPage = 10;
-    protected $paginationTheme = 'bootstrap'; // Use Bootstrap theme for pagination
+    protected $paginationTheme = 'bootstrap';
 
     // --- Form Properties ---
-    public $showModal = false; // Controls modal visibility
-    public $attributeId;       // Null for create, ID for edit
+    public $showModal = false;
+    public $attributeId;
     public $name;
     public $slug;
     public $display_type;
     public $is_filterable = false;
     public $is_active = true;
-    public $displayTypes;      // For dropdown options
+    public $displayTypes;
 
-    public $isEditing = false; // Flag to determine if we're editing or creating
+    public $isEditing = false;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -39,29 +40,32 @@ class AttributeManager extends Component
         'page' => ['except' => 1],
     ];
 
-    // --- Lifecycle Hooks ---
+    /**
+     * Computed Property to get the current tenant info.
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return \App\Models\Tenant::find(session('active_tenant_id'));
+    }
+
     public function mount()
     {
         $this->displayTypes = AttributeDisplayType::labels();
-        $this->display_type = AttributeDisplayType::Text->value; // Default for new attributes
+        $this->display_type = AttributeDisplayType::Text->value;
     }
 
-    // Define base rules
     protected $rules = [
         'name' => 'required|string|max:255',
-        'display_type' => ['required', 'string'], // Will be validated against enum values dynamically
         'is_filterable' => 'boolean',
         'is_active' => 'boolean',
     ];
 
-    // Custom validation messages
     protected $messages = [
-        'slug.unique' => 'This slug is already taken. Please try another one.',
+        'slug.unique' => 'This slug is already taken in this store.',
         'slug.alpha_dash' => 'The slug may only contain letters, numbers, dashes, and underscores.',
-        'display_type.in' => 'The selected display type is invalid.',
     ];
 
-    // Dynamically get validation rules, especially for unique slug
     private function getDynamicValidationRules()
     {
         return array_merge($this->rules, [
@@ -70,13 +74,15 @@ class AttributeManager extends Component
                 'string',
                 'max:255',
                 'alpha_dash',
-                Rule::unique('attributes', 'slug')->ignore($this->attributeId),
+                // SCOPED UNIQUE: Unique only within the active tenant
+                Rule::unique('attributes', 'slug')
+                    ->where('tenant_id', session('active_tenant_id'))
+                    ->ignore($this->attributeId),
             ],
             'display_type' => ['required', Rule::in(array_keys(AttributeDisplayType::labels()))],
         ]);
     }
 
-    // --- Table Methods ---
     public function updatingSearch()
     {
         $this->resetPage();
@@ -97,7 +103,6 @@ class AttributeManager extends Component
         $this->sortField = $field;
     }
 
-    // --- Form Methods ---
     public function openModal()
     {
         $this->resetValidation();
@@ -107,18 +112,26 @@ class AttributeManager extends Component
     public function closeModal()
     {
         $this->showModal = false;
-        $this->resetForm(); // Reset form fields when modal closes
+        $this->resetForm();
     }
 
     public function createAttribute()
     {
         $this->isEditing = false;
-        $this->resetForm(); // Clear all fields for a new entry
+        $this->resetForm();
         $this->openModal();
     }
 
-    public function editAttribute(Attribute $attribute)
+    public function editAttribute($id)
     {
+        // Global Scope in Attribute model ensures we only find if it belongs to current tenant
+        $attribute = Attribute::find($id);
+
+        if (!$attribute) {
+            session()->flash('error', 'Attribute not found or access denied.');
+            return;
+        }
+
         $this->isEditing = true;
         $this->attributeId = $attribute->id;
         $this->name = $attribute->name;
@@ -134,6 +147,7 @@ class AttributeManager extends Component
         $this->validate($this->getDynamicValidationRules());
 
         $data = [
+            'tenant_id' => session('active_tenant_id'), // Explicitly setting tenant_id
             'name' => $this->name,
             'slug' => $this->slug,
             'display_type' => $this->display_type,
@@ -142,8 +156,7 @@ class AttributeManager extends Component
         ];
 
         if ($this->isEditing) {
-            $attribute = Attribute::find($this->attributeId);
-            $attribute->update($data);
+            Attribute::find($this->attributeId)->update($data);
             session()->flash('message', 'Attribute updated successfully!');
         } else {
             Attribute::create($data);
@@ -164,12 +177,7 @@ class AttributeManager extends Component
         }
 
         if ($attribute->values()->count() > 0) {
-            session()->flash('error', 'Cannot delete attribute with associated values. Please delete its values first.');
-            return;
-        }
-
-        if ($attribute->attributeSets()->count() > 0) {
-            session()->flash('error', 'Cannot delete attribute assigned to attribute sets. Please remove it from sets first.');
+            session()->flash('error', 'Cannot delete attribute with associated values.');
             return;
         }
 
@@ -178,9 +186,6 @@ class AttributeManager extends Component
         $this->resetPage();
     }
 
-    // --- Utility Methods ---
-
-    // Resets all form-related properties
     private function resetForm()
     {
         $this->attributeId = null;
@@ -193,7 +198,6 @@ class AttributeManager extends Component
         $this->resetValidation();
     }
 
-    // Auto-generate slug when name changes
     public function updatedName($value)
     {
         if (empty($this->slug) || Str::slug($value) === $this->slug) {
@@ -205,13 +209,19 @@ class AttributeManager extends Component
     {
         $attributes = Attribute::query()
             ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('slug', 'like', '%' . $this->search . '%');
+                /** 
+                 * Grouped OR search terms.
+                 * Prevents search from bypassing the Global Tenant Scope.
+                 */
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('slug', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.attribute.attribute-manager', [
+        return view('livewire.admin.attribute.attribute-manager', [
             'attributes' => $attributes,
         ]);
     }

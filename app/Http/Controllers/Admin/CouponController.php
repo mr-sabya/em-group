@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Coupon;
@@ -11,19 +11,19 @@ class CouponController extends Controller
     // coupons page
     public function index()
     {
-        return view('backend.pages.coupon.index');
+        return view('admin.coupon.index');
     }
 
     // create coupon
     public function create()
     {
-        return view('backend.pages.coupon.create');
+        return view('admin.coupon.create');
     }
 
     // edit coupon
     public function edit($id)
     {
         $coupon = Coupon::findOrFail($id);
-        return view('backend.pages.coupon.edit', compact('coupon'));
+        return view('admin.coupon.edit', compact('coupon'));
     }
 }

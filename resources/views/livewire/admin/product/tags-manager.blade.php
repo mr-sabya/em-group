@@ -1,7 +1,7 @@
-<div class="container mt-4">
+<div>
     <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Manage Tags for "{{ $product->name }}"</h3>
+        <div class="card-header bg-primary">
+            <h3 class="mb-0 text-white ">Manage Tags for "{{ $product->name }}"</h3>
         </div>
         <div class="card-body">
             @if (session()->has('message'))
@@ -17,7 +17,7 @@
             <h5 class="mb-3">Current Tags</h5>
             <div class="mb-4">
                 @forelse ($currentTags as $tag)
-                <span class="badge bg-info text-dark fs-6 p-2 me-2 mb-2">
+                <span class="badge bg-info text-white fs-6 p-2 me-2 mb-2">
                     {{ $tag->name }}
                     <button type="button" class="btn-close btn-close-white ms-1" wire:click="removeTag({{ $tag->id }})" aria-label="Remove"></button>
                 </span>

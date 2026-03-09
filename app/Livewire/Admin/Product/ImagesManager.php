@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Product;
+namespace App\Livewire\Admin\Product;
 
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -102,6 +102,6 @@ class ImagesManager extends Component
 
     public function render()
     {
-        return view('livewire.product.images-manager');
+        return view('livewire.admin.product.images-manager');
     }
 }

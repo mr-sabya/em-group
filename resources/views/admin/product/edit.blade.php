@@ -1,5 +1,5 @@
-@extends('backend.layouts.app')
+@extends('admin.layouts.app')
 
 @section('content')
-<livewire:product.manage productId="{{ $product->id }}" />
+<livewire:admin.product.manage productId="{{ $product->id }}" />
 @endsection

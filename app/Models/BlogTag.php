@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,7 +10,7 @@ use Illuminate\Support\Str;
 
 class BlogTag extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id', // Added for multi-tenancy
@@ -30,7 +31,7 @@ class BlogTag extends Model
         static::addGlobalScope('tenant', function (Builder $builder) {
             $activeTenantId = session('active_tenant_id');
             if ($activeTenantId) {
-                $builder->where('tenant_id', $activeTenantId);
+                $builder->where($builder->qualifyColumn('tenant_id'), $activeTenantId);
             }
         });
 

@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use App\Enums\PaymentStatus;
 use App\Enums\OrderStatus;
+use App\Traits\BelongsToTenant;
 
 class Order extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id', // Added for multi-tenancy
@@ -100,7 +101,7 @@ class Order extends Model
         static::addGlobalScope('tenant', function (Builder $builder) {
             $activeTenantId = session('active_tenant_id');
             if ($activeTenantId) {
-                $builder->where('tenant_id', $activeTenantId);
+                $builder->where($builder->qualifyColumn('tenant_id'), $activeTenantId);
             }
         });
 

@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Livewire\Coupon;
+namespace App\Livewire\Admin\Coupon;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed; // Added for Computed Property
 use App\Models\Coupon;
 use App\Models\Category;
 
@@ -18,8 +19,25 @@ class CategoryAssignment extends Component
 
     protected $listeners = ['openCategoryAssignmentModal' => 'openModal'];
 
+    /**
+     * BEST WAY: Computed Property to get the current tenant ID.
+     */
+    #[Computed]
+    public function currentTenantId()
+    {
+        return session('active_tenant_id');
+    }
+
     public function openModal($couponId)
     {
+        // Global Scope in Coupon model ensures we only find a coupon belonging to this tenant
+        $coupon = Coupon::find($couponId);
+
+        if (!$coupon) {
+            $this->dispatch('notify', message: 'Access Denied or Coupon not found.', type: 'danger');
+            return;
+        }
+
         $this->couponId = $couponId;
         $this->loadAssignedCategories();
         $this->resetPage();
@@ -52,8 +70,18 @@ class CategoryAssignment extends Component
     public function assignCategory($categoryId)
     {
         $coupon = Coupon::find($this->couponId);
-        if ($coupon && !in_array($categoryId, $this->assignedCategoryIds)) {
-            $coupon->categories()->attach($categoryId);
+
+        // Category::find ensures the category also belongs to the current tenant
+        $categoryExists = Category::where('id', $categoryId)->exists();
+
+        if ($coupon && $categoryExists && !in_array($categoryId, $this->assignedCategoryIds)) {
+            /**
+             * FIXED: Explicitly pass the tenant_id to the pivot table (coupon_category)
+             */
+            $coupon->categories()->attach($categoryId, [
+                'tenant_id' => $this->currentTenantId
+            ]);
+
             $this->assignedCategoryIds[] = $categoryId;
             session()->flash('category_assignment_message', 'Category assigned successfully!');
         }
@@ -73,13 +101,19 @@ class CategoryAssignment extends Component
     {
         $categories = Category::query()
             ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('description', 'like', '%' . $this->search . '%');
+                /** 
+                 * BEST WAY: Group OR terms in a closure.
+                 * Prevents search from bypassing the Global Tenant Scope.
+                 */
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('description', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy('name')
             ->paginate(10);
 
-        return view('livewire.coupon.category-assignment', [
+        return view('livewire.admin.coupon.category-assignment', [
             'categories' => $categories,
         ]);
     }

@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Livewire\Tag;
+namespace App\Livewire\Admin\Tag;
 
 use Livewire\Component;
 use App\Models\Tag;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed; // Added for Computed Property
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
@@ -32,7 +33,14 @@ class TagManager extends Component
         'sortDirection' => ['except' => 'asc'],
     ];
 
-    protected $listeners = ['deleteTagConfirmed' => 'deleteTag'];
+    /**
+     * BEST WAY: Helper to get the current tenant for the UI
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return \App\Models\Tenant::find(session('active_tenant_id'));
+    }
 
     public function rules()
     {
@@ -43,8 +51,10 @@ class TagManager extends Component
                 'string',
                 'min:2',
                 'max:255',
-                // Ensure slug is unique, ignore current tag during edit
-                ($this->tagId ? 'unique:tags,slug,' . $this->tagId : 'unique:tags,slug'),
+                // SCOPED UNIQUE: Ensures slug is only unique for the active tenant
+                Rule::unique('tags')
+                    ->where('tenant_id', session('active_tenant_id'))
+                    ->ignore($this->tagId),
             ],
         ];
     }
@@ -67,7 +77,14 @@ class TagManager extends Component
 
     public function editTag($id)
     {
-        $tag = Tag::findOrFail($id);
+        // Global Scope handles security: find() only returns if tag belongs to tenant
+        $tag = Tag::find($id);
+
+        if (!$tag) {
+            session()->flash('error', 'Tag not found or access denied.');
+            return;
+        }
+
         $this->tagId = $tag->id;
         $this->name = $tag->name;
         $this->slug = $tag->slug;
@@ -83,10 +100,11 @@ class TagManager extends Component
         $data = [
             'name' => $this->name,
             'slug' => $this->slug,
+            'tenant_id' => session('active_tenant_id'), // Explicitly saving tenant_id
         ];
 
         if ($this->isEditing) {
-            Tag::findOrFail($this->tagId)->update($data);
+            Tag::find($this->tagId)->update($data);
             session()->flash('message', 'Tag updated successfully!');
         } else {
             Tag::create($data);
@@ -94,29 +112,21 @@ class TagManager extends Component
         }
 
         $this->closeModal();
-        $this->dispatch('refreshComponent'); // Optional: Emit event if other components need to know
     }
 
     public function deleteTag($id)
     {
-        Tag::findOrFail($id)->delete();
-        session()->flash('message', 'Tag deleted successfully!');
-    }
+        $tag = Tag::find($id);
 
-    // Confirmation for delete (client-side via JS usually)
-    public function confirmDelete($id)
-    {
-        // This method can be used to emit a client-side event
-        // that triggers a JS confirmation dialog (e.g., SweetAlert2).
-        // For simplicity, we'll use wire:confirm directly in the Blade for now.
-        $this->deleteTag($id); // Directly call deleteTag as wire:confirm handles confirmation
+        if ($tag) {
+            $tag->delete();
+            session()->flash('message', 'Tag deleted successfully!');
+        }
     }
-
 
     public function closeModal()
     {
         $this->showModal = false;
-        $this->resetErrorBag();
         $this->resetForm();
     }
 
@@ -126,6 +136,11 @@ class TagManager extends Component
         $this->name = '';
         $this->slug = '';
         $this->resetValidation();
+    }
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
     }
 
     public function sortBy($field)
@@ -142,13 +157,19 @@ class TagManager extends Component
     {
         $tags = Tag::query()
             ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('slug', 'like', '%' . $this->search . '%');
+                /** 
+                 * BEST WAY: Group the search terms.
+                 * Prevents OR from breaking the tenant global scope.
+                 */
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('slug', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.tag.tag-manager', [
+        return view('livewire.admin.tag.tag-manager', [
             'tags' => $tags,
         ]);
     }

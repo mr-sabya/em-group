@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
@@ -11,19 +11,19 @@ class OrderController extends Controller
     //
     public function  index()
     {
-        return view('backend.pages.orders.index');
+        return view('admin.orders.index');
     }
 
     // invoice view
     public function invoice($orderId)
     {
-        return view('backend.pages.orders.invoice', compact('orderId'));
+        return view('admin.orders.invoice', compact('orderId'));
     }
 
     // manage view
     public function manage($orderId)
     {
         $order = Order::findOrFail($orderId);
-        return view('backend.pages.orders.manage', compact('order'));
+        return view('admin.orders.manage', compact('order'));
     }
 }

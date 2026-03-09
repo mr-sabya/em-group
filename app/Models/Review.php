@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder; // Ensure this is imported
 use App\Enums\ReviewStatus;
+use App\Traits\BelongsToTenant;
 
 class Review extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToTenant;
 
     protected $fillable = [
         'tenant_id', // Added
@@ -41,7 +42,7 @@ class Review extends Model
         static::addGlobalScope('tenant', function (Builder $builder) {
             $activeTenantId = session('active_tenant_id');
             if ($activeTenantId) {
-                $builder->where('tenant_id', $activeTenantId);
+                $builder->where($builder->qualifyColumn('tenant_id'), $activeTenantId);
             }
         });
 

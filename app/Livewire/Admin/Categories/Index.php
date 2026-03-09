@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Livewire\Categories;
+namespace App\Livewire\Admin\Categories;
 
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Computed;
 
 class Index extends Component
 {
@@ -119,6 +120,12 @@ class Index extends Component
         $this->resetPage();
     }
 
+    #[Computed]
+    public function currentTenant()
+    {
+        return \App\Models\Tenant::find(session('active_tenant_id'));
+    }
+
     public function render()
     {
         $categories = Category::query()
@@ -131,7 +138,7 @@ class Index extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.categories.index', [
+        return view('livewire.admin.categories.index', [
             'categories' => $categories,
         ]);
     }

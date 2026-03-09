@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Livewire\Coupon;
+namespace App\Livewire\Admin\Coupon;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed; // Added for Computed Property
 use App\Models\Coupon;
+use App\Models\Tenant;
 
 class Index extends Component
 {
@@ -28,6 +30,18 @@ class Index extends Component
     // Listen for the event emitted by assignment modals when they close
     protected $listeners = ['couponAssignmentsUpdated' => '$refresh'];
 
+    /**
+     * BEST WAY: Computed Property to get the current tenant info.
+     * Accessible in Blade via $this->currentTenant
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return Tenant::find(session('active_tenant_id'));
+    }
+
+    // --- Table Methods ---
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -50,14 +64,16 @@ class Index extends Component
 
     public function deleteCoupon($couponId)
     {
+        // Global Scope in Coupon model ensures we only find if it belongs to current tenant
         $coupon = Coupon::find($couponId);
 
         if (!$coupon) {
-            session()->flash('error', 'Coupon not found.');
+            session()->flash('error', 'Coupon not found or access denied.');
             return;
         }
 
-        // Detach relationships before deleting to avoid foreign key constraints
+        // Detach relationships before deleting
+        // Note: Pivot tables like coupon_product should also have tenant_id column
         $coupon->products()->detach();
         $coupon->categories()->detach();
         $coupon->users()->detach();
@@ -67,7 +83,8 @@ class Index extends Component
         $this->resetPage();
     }
 
-    // Methods to open assignment modals
+    // --- Methods to open assignment modals ---
+
     public function openProductAssignment($couponId)
     {
         $this->activeCouponId = $couponId;
@@ -90,13 +107,19 @@ class Index extends Component
     {
         $coupons = Coupon::query()
             ->when($this->search, function ($query) {
-                $query->where('code', 'like', '%' . $this->search . '%')
-                    ->orWhere('description', 'like', '%' . $this->search . '%');
+                /** 
+                 * BEST WAY: Group OR search terms in a closure.
+                 * Prevents "OR" from bypassing the Global Tenant Scope.
+                 */
+                $query->where(function ($q) {
+                    $q->where('code', 'like', '%' . $this->search . '%')
+                        ->orWhere('description', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.coupon.index', [
+        return view('livewire.admin.coupon.index', [
             'coupons' => $coupons,
         ]);
     }

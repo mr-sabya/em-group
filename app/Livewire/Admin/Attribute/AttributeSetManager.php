@@ -1,11 +1,13 @@
 <?php
 
-namespace App\Livewire\Attribute;
+namespace App\Livewire\Admin\Attribute;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed; // Added for Computed Property
 use App\Models\Attribute;
 use App\Models\AttributeSet;
+use App\Models\Tenant;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,8 +28,8 @@ class AttributeSetManager extends Component
     public $attributeSetId;
     public $name;
     public $description;
-    public $selectedAttributes = []; // For linking attributes to a set
-    public $allAttributes = []; // All available attributes for multi-select
+    public $selectedAttributes = [];
+    public $allAttributes = [];
 
     public $isEditing = false;
 
@@ -38,7 +40,15 @@ class AttributeSetManager extends Component
         'page' => ['except' => 1],
     ];
 
-    // --- Lifecycle Hooks ---
+    /**
+     * Computed property for the current tenant.
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return Tenant::find(session('active_tenant_id'));
+    }
+
     public function mount()
     {
         $this->loadAllAttributes();
@@ -46,24 +56,27 @@ class AttributeSetManager extends Component
 
     public function loadAllAttributes()
     {
+        // Global Scope in Attribute model handles the tenant filtering automatically
         $this->allAttributes = Attribute::select('id', 'name')->orderBy('name')->get();
     }
 
-    // Define base rules
-    protected $rules = [
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string|max:1000',
-        'selectedAttributes' => 'nullable|array',
-        'selectedAttributes.*' => 'exists:attributes,id', // Ensure each ID exists
-    ];
-
-    // --- Table Methods ---
-    public function updatingSearch()
+    protected function rules()
     {
-        $this->resetPage();
+        $tenantId = session('active_tenant_id');
+
+        return [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'selectedAttributes' => 'nullable|array',
+            'selectedAttributes.*' => [
+                'exists:attributes,id',
+                // Security: Ensure selected attributes belong to the active tenant
+                Rule::exists('attributes', 'id')->where('tenant_id', $tenantId)
+            ],
+        ];
     }
 
-    public function updatingPerPage()
+    public function updatingSearch()
     {
         $this->resetPage();
     }
@@ -78,7 +91,6 @@ class AttributeSetManager extends Component
         $this->sortField = $field;
     }
 
-    // --- Form Methods ---
     public function openModal()
     {
         $this->resetValidation();
@@ -98,21 +110,32 @@ class AttributeSetManager extends Component
         $this->openModal();
     }
 
-    public function editAttributeSet(AttributeSet $attributeSet)
+    public function editAttributeSet($id)
     {
+        // find() respects Global Scope security
+        $attributeSet = AttributeSet::with('attributes')->find($id);
+
+        if (!$attributeSet) {
+            session()->flash('error', 'Attribute Set not found or access denied.');
+            return;
+        }
+
         $this->isEditing = true;
         $this->attributeSetId = $attributeSet->id;
         $this->name = $attributeSet->name;
         $this->description = $attributeSet->description;
-        $this->selectedAttributes = $attributeSet->attributes->pluck('id')->toArray(); // Populate selected attributes
+        $this->selectedAttributes = $attributeSet->attributes->pluck('id')->toArray();
         $this->openModal();
     }
 
     public function saveAttributeSet()
     {
-        $this->validate($this->rules); // All rules are static for attribute set
+        $this->validate();
+
+        $tenantId = session('active_tenant_id');
 
         $data = [
+            'tenant_id' => $tenantId, // Explicitly ensure tenant_id is set
             'name' => $this->name,
             'description' => $this->description,
         ];
@@ -120,41 +143,37 @@ class AttributeSetManager extends Component
         if ($this->isEditing) {
             $attributeSet = AttributeSet::find($this->attributeSetId);
             $attributeSet->update($data);
-            $attributeSet->attributes()->sync($this->selectedAttributes); // Sync relationships
-            session()->flash('message', 'Attribute Set updated successfully!');
         } else {
             $attributeSet = AttributeSet::create($data);
-            $attributeSet->attributes()->sync($this->selectedAttributes); // Sync relationships
-            session()->flash('message', 'Attribute Set created successfully!');
         }
 
+        // FIXED: Sync with tenant_id for the pivot table if pivot has tenant_id column
+        // If your pivot table 'attribute_attribute_set' has a tenant_id, use syncWithPivotValues
+        $attributeSet->attributes()->syncWithPivotValues($this->selectedAttributes, [
+            'tenant_id' => $tenantId
+        ]);
+
+        session()->flash('message', 'Attribute Set saved successfully!');
         $this->closeModal();
         $this->resetPage();
     }
 
-    public function deleteAttributeSet($attributeSetId)
+    public function deleteAttributeSet($id)
     {
-        $attributeSet = AttributeSet::find($attributeSetId);
+        $attributeSet = AttributeSet::find($id);
 
-        if (!$attributeSet) {
-            session()->flash('error', 'Attribute Set not found.');
-            return;
-        }
+        if (!$attributeSet) return;
 
-        // Check if any products are using this attribute set
         if ($attributeSet->products()->count() > 0) {
             session()->flash('error', 'Cannot delete attribute set with associated products.');
             return;
         }
 
-        // Detach all attributes from the set before deleting the set
         $attributeSet->attributes()->detach();
         $attributeSet->delete();
         session()->flash('message', 'Attribute Set deleted successfully!');
         $this->resetPage();
     }
-
-    // --- Utility Methods ---
 
     private function resetForm()
     {
@@ -171,13 +190,16 @@ class AttributeSetManager extends Component
         $attributeSets = AttributeSet::query()
             ->with('attributes')
             ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                      ->orWhere('description', 'like', '%' . $this->search . '%');
+                // Grouped OR query to maintain tenant scope security
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('description', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.attribute.attribute-set-manager', [
+        return view('livewire.admin.attribute.attribute-set-manager', [
             'attributeSets' => $attributeSets,
         ]);
     }

@@ -1,7 +1,7 @@
-<div class="container mt-4">
+<div>
     <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Manage Images for "{{ $product->name }}"</h3>
+        <div class="card-header bg-primary ">
+            <h3 class="mb-0 text-white">Manage Images for "{{ $product->name }}"</h3>
         </div>
         <div class="card-body">
             @if (session()->has('message'))
@@ -40,10 +40,10 @@
             @else
             <!-- Parent Container -->
             <!-- 'animation' adds a smooth slide effect when swapping -->
-            <div 
-    class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3"
-    x-data
-    x-init="
+            <div
+                class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-6 g-3"
+                x-data
+                x-init="
         Sortable.create($el, {
             animation: 150,
             handle: '.drag-handle', // Class selector for the handle
@@ -55,25 +55,24 @@
                 $wire.updateImageSortOrder(orderedIds);
             }
         })
-    "
->
-    @foreach ($existingImages as $image)
-        <!-- Add data-id so JS can read it -->
-        <div data-id="{{ $image->id }}" wire:key="image-{{ $image->id }}" class="col">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <!-- Add the handle class here -->
-                    <button type="button" class="btn btn-secondary btn-sm drag-handle" style="cursor: move;">
-                        <i class="fas fa-arrows-alt"></i> Move
-                    </button>
-                    
-                    <!-- Other content -->
-                    <img src="{{ asset('storage/' . $image->image_path) }}" class="img-fluid mt-2">
+    ">
+                @foreach ($existingImages as $image)
+                <!-- Add data-id so JS can read it -->
+                <div data-id="{{ $image->id }}" wire:key="image-{{ $image->id }}" class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <!-- Add the handle class here -->
+                            <button type="button" class="btn btn-secondary btn-sm drag-handle" style="cursor: move;">
+                                <i class="fas fa-arrows-alt"></i> Move
+                            </button>
+
+                            <!-- Other content -->
+                            <img src="{{ asset('storage/' . $image->image_path) }}" class="img-fluid mt-2">
+                        </div>
+                    </div>
                 </div>
+                @endforeach
             </div>
-        </div>
-    @endforeach
-</div>
             @endif
         </div>
         <div class="card-footer text-end">

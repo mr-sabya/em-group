@@ -1,5 +1,6 @@
-<div class="py-4">
-    <h2 class="mb-4">Product Management</h2>
+<div>
+    <h2 class="">Product Management</h2>
+    <p class="text-muted mb-4">Active Store: <strong>{{ $this->currentTenant->name ?? 'Default' }}</strong></p>
 
     @if (session()->has('message'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">

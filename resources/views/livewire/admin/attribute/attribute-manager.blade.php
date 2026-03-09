@@ -1,109 +1,104 @@
-<div class="py-4">
-    <h2 class="mb-4">Attribute Management</h2>
+<div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0 h4">Attribute Management</h2>
+            <small class="text-muted">Active Store: <strong>{{ $this->currentTenant->name ?? 'Default' }}</strong></small>
+        </div>
+        <button class="btn btn-primary shadow-sm" wire:click="createAttribute">
+            <i class="fas fa-plus"></i> Add New Attribute
+        </button>
+    </div>
 
     @if (session()->has('message'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('message') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i> {{ session('message') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 
     @if (session()->has('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="alert alert-danger border-0 shadow-sm alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Attributes List</h5>
-            <button class="btn btn-primary" wire:click="createAttribute">
-                <i class="fas fa-plus"></i> Add New Attribute
-            </button>
-        </div>
+    <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
             <div class="row align-items-center mb-3">
-                <div class="col-md-6 col-lg-4">
-                    <input type="text" class="form-control" placeholder="Search attributes..." wire:model.live.debounce.300ms="search">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" placeholder="Search attributes..." wire:model.live.debounce.300ms="search">
+                    </div>
                 </div>
-                <div class="col-md-6 col-lg-8 d-flex justify-content-md-end justify-content-start mt-2 mt-md-0">
+                <div class="col-md-8 d-flex justify-content-md-end mt-2 mt-md-0">
                     <div class="d-flex align-items-center gap-2">
                         <select wire:model.live="perPage" class="form-select w-auto">
-                            <option value="5">5</option>
                             <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
                         </select>
-                        <span class="text-nowrap">Per Page</span>
+                        <span class="text-muted small text-nowrap">Per Page</span>
                     </div>
                 </div>
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover table-striped table-bordered mb-0">
-                    <thead>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
                             <th style="width: 50px;">ID</th>
-                            <th wire:click="sortBy('name')" role="button">Name
+                            <th wire:click="sortBy('name')" role="button" class="user-select-none">Name
                                 @if ($sortField == 'name')
-                                <i class="fas {{ $sortDirection == 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}"></i>
+                                <i class="fas {{ $sortDirection == 'asc' ? 'fa-sort-up' : 'fa-sort-down' }} text-primary"></i>
                                 @else
-                                <i class="fas fa-sort text-muted"></i>
+                                <i class="fas fa-sort text-muted opacity-50"></i>
                                 @endif
                             </th>
                             <th>Slug</th>
                             <th>Display Type</th>
-                            <th wire:click="sortBy('is_filterable')" role="button">Filterable
-                                @if ($sortField == 'is_filterable')
-                                <i class="fas {{ $sortDirection == 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}"></i>
-                                @else
-                                <i class="fas fa-sort text-muted"></i>
-                                @endif
-                            </th>
-                            <th wire:click="sortBy('is_active')" role="button">Active
-                                @if ($sortField == 'is_active')
-                                <i class="fas {{ $sortDirection == 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}"></i>
-                                @else
-                                <i class="fas fa-sort text-muted"></i>
-                                @endif
-                            </th>
-                            <th style="width: 150px;">Actions</th>
+                            <th class="text-center">Filterable</th>
+                            <th class="text-center">Status</th>
+                            <th style="width: 120px;" class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($attributes as $attribute)
-                        <tr>
-                            <td>{{ $attribute->id }}</td>
-                            <td>{{ $attribute->name }}</td>
-                            <td>{{ $attribute->slug }}</td>
-                            <td><span class="badge bg-secondary">{{ $attribute->display_type->label() }}</span></td>
-                            <td>
+                        <tr wire:key="attr-{{ $attribute->id }}">
+                            <td><span class="text-muted small">#{{ $attribute->id }}</span></td>
+                            <td class="fw-bold">{{ $attribute->name }}</td>
+                            <td><code class="text-secondary small">{{ $attribute->slug }}</code></td>
+                            <td><span class="badge bg-info-subtle text-info border border-info-subtle">{{ $attribute->display_type->label() }}</span></td>
+                            <td class="text-center">
                                 @if ($attribute->is_filterable)
-                                <span class="badge bg-success">Yes</span>
+                                <span class="badge bg-success-subtle text-success rounded-pill px-3">Yes</span>
                                 @else
-                                <span class="badge bg-danger">No</span>
+                                <span class="badge bg-light text-muted rounded-pill px-3 border">No</span>
                                 @endif
                             </td>
-                            <td>
+                            <td class="text-center">
                                 @if ($attribute->is_active)
-                                <span class="badge bg-success">Yes</span>
+                                <span class="badge bg-success rounded-circle p-1" title="Active"><span class="visually-hidden">Active</span></span>
                                 @else
-                                <span class="badge bg-danger">No</span>
+                                <span class="badge bg-danger rounded-circle p-1" title="Inactive"><span class="visually-hidden">Inactive</span></span>
                                 @endif
                             </td>
-                            <td>
-                                <button class="btn btn-sm btn-info me-1" wire:click="editAttribute({{ $attribute->id }})" title="Edit">
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-info me-1 border-0" wire:click="editAttribute({{ $attribute->id }})" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger" wire:click="deleteAttribute({{ $attribute->id }})" wire:confirm="Are you sure you want to delete this attribute?" title="Delete">
+                                <button class="btn btn-sm btn-outline-danger border-0" wire:click="deleteAttribute({{ $attribute->id }})" wire:confirm="Are you sure you want to delete this attribute?" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center">No attributes found.</td>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="fas fa-layer-group fa-3x text-light mb-3"></i>
+                                <h6 class="text-muted">No attributes found for this store.</h6>
+                            </td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -115,6 +110,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal remains the same structure with your improved UI -->
+    ...
 
     <!-- Attribute Create/Edit Modal -->
     <div class="modal fade {{ $showModal ? 'show d-block' : '' }}" id="attributeModal" tabindex="-1" role="dialog" aria-labelledby="attributeModalLabel" aria-hidden="{{ !$showModal }}" @if($showModal) style="background-color: rgba(0,0,0,.5);" @endif>

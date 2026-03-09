@@ -1,5 +1,6 @@
-<div class="py-4">
-    <h2 class="mb-4">Coupon Management</h2>
+<div>
+    <h2>Coupon Management</h2>
+    <p class="text-muted mb-4">Active Store: <strong>{{ $this->currentTenant->name ?? 'Default' }}</strong></p>
 
     @if (session()->has('message'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -69,7 +70,7 @@
                     </thead>
                     <tbody>
                         @forelse ($coupons as $coupon)
-                        <tr>
+                        <tr wire:key="coupon-row-{{ $coupon->id }}">
                             <td>{{ $coupon->id }}</td>
                             <td>{{ $coupon->code }}</td>
                             <td>{{ Str::limit($coupon->description, 50) }}</td>
@@ -102,35 +103,57 @@
                                 <span class="badge bg-danger">No</span>
                                 @endif
                             </td>
-                            <td>
+                            <td class="text-end position-static">
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton{{ $coupon->id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-sm btn-secondary dropdown-toggle"
+                                        type="button"
+                                        id="dropdownMenuButton{{ $coupon->id }}"
+                                        data-bs-toggle="dropdown"
+                                        data-bs-display="static"
+                                        aria-expanded="false">
                                         Actions
                                     </button>
-                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ $coupon->id }}">
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="dropdownMenuButton{{ $coupon->id }}">
                                         <li>
-                                            <a class="dropdown-item" href="{{ route('product.coupons.edit', $coupon->id) }}">
-                                                <i class="fas fa-edit me-2"></i>Edit Coupon
+                                            <a class="dropdown-item py-2" href="{{ route('product.coupons.edit', $coupon->id) }}" wire:navigate>
+                                                <i class="fas fa-edit me-2 text-info"></i>Edit Coupon
+                                            </a>
+                                        </li>
+
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+
+                                        <li class="dropdown-header small text-uppercase fw-bold text-muted">Assignments</li>
+
+                                        <li>
+                                            <a class="dropdown-item py-2" href="#" wire:click.prevent="openProductAssignment({{ $coupon->id }})">
+                                                <i class="fas fa-box-open me-2 text-primary"></i>Assign Products
                                             </a>
                                         </li>
                                         <li>
-                                            <hr class="dropdown-divider">
+                                            <a class="dropdown-item py-2" href="#" wire:click.prevent="openCategoryAssignment({{ $coupon->id }})">
+                                                <i class="fas fa-tags me-2 text-warning"></i>Assign Categories
+                                            </a>
                                         </li>
-                                        <li><a class="dropdown-item" href="#" wire:click.prevent="openProductAssignment({{ $coupon->id }})">
-                                                <i class="fas fa-box-open me-2"></i>Assign Products
-                                            </a></li>
-                                        <li><a class="dropdown-item" href="#" wire:click.prevent="openCategoryAssignment({{ $coupon->id }})">
-                                                <i class="fas fa-tags me-2"></i>Assign Categories
-                                            </a></li>
-                                        <li><a class="dropdown-item" href="#" wire:click.prevent="openUserAssignment({{ $coupon->id }})">
-                                                <i class="fas fa-user-plus me-2"></i>Assign Users
-                                            </a></li>
+                                        <li>
+                                            <a class="dropdown-item py-2" href="#" wire:click.prevent="openUserAssignment({{ $coupon->id }})">
+                                                <i class="fas fa-user-plus me-2 text-success"></i>Assign Users
+                                            </a>
+                                        </li>
+
                                         <li>
                                             <hr class="dropdown-divider">
                                         </li>
-                                        <li><button type="button" class="dropdown-item text-danger" wire:click="deleteCoupon({{ $coupon->id }})" wire:confirm="Are you sure you want to delete this coupon? This cannot be undone.">
+
+                                        <li>
+                                            <button type="button"
+                                                class="dropdown-item text-danger py-2"
+                                                wire:click="deleteCoupon({{ $coupon->id }})"
+                                                wire:confirm="Are you sure? This will remove the coupon for the current store.">
                                                 <i class="fas fa-trash me-2"></i>Delete Coupon
-                                            </button></li>
+                                            </button>
+                                        </li>
                                     </ul>
                                 </div>
                             </td>
@@ -152,7 +175,7 @@
 
 
     {{-- Include the assignment modals --}}
-    <livewire:coupon.product-assignment />
-    <livewire:coupon.category-assignment />
-    <livewire:coupon.user-assignment />
+    <livewire:admin.coupon.product-assignment />
+    <livewire:admin.coupon.category-assignment />
+    <livewire:admin.coupon.user-assignment />
 </div>

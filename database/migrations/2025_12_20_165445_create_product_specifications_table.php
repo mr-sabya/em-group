@@ -13,6 +13,15 @@ return new class extends Migration
     {
         Schema::create('product_specifications', function (Blueprint $table) {
             $table->id();
+            // 1. Add Tenant ID
+            $table->string('tenant_id');
+
+            // 2. Create the foreign key constraint manually
+            $table->foreign('tenant_id')
+                ->references('id')
+                ->on('tenants')
+                ->onDelete('cascade');
+
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('specification_key_id')->constrained()->onDelete('cascade');
             $table->text('value'); // e.g., "Aluminum" or "32.5″L x 24″W"

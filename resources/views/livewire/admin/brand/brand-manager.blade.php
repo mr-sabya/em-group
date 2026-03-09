@@ -1,5 +1,6 @@
-<div class="py-4">
-    <h2 class="mb-4">Brand Management</h2>
+<div>
+    <h2>Brand Management</h2>
+    <p class="text-muted mb-4 small">Managing brands for: <strong>{{ $this->currentTenant->name ?? 'Unknown Store' }}</strong></p>
 
     @if (session()->has('message'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">

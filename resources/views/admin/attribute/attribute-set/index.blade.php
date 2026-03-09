@@ -1,5 +1,5 @@
-@extends('backend.layouts.app')
+@extends('admin..layouts.app')
 
 @section('content')
-<livewire:attribute.attribute-set-manager />
+<livewire:admin.attribute.attribute-set-manager />
 @endsection

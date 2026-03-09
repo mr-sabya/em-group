@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Livewire\Attribute;
+namespace App\Livewire\Admin\Attribute;
 
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
+use Livewire\Attributes\Computed;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Enums\AttributeDisplayType;
@@ -28,16 +29,16 @@ class AttributeValueManager extends Component
     // --- Form Properties ---
     public $showModal = false;
     public $attributeValueId;
-    public $attribute_id; // The parent attribute for this value
+    public $attribute_id;
     public $value;
     public $slug;
     public $metadata = [];
-    public $metadataColor; // For color type attributes
-    public $metadataImage; // For image type attributes (temporary upload)
-    public $currentMetadataImage; // Path to existing image
+    public $metadataColor;
+    public $metadataImage;
+    public $currentMetadataImage;
 
     public $isEditing = false;
-    public $availableAttributes = []; // For selecting parent attribute
+    public $availableAttributes = [];
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -46,7 +47,15 @@ class AttributeValueManager extends Component
         'page' => ['except' => 1],
     ];
 
-    // --- Lifecycle Hooks ---
+    /**
+     * Computed property to access current tenant.
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return \App\Models\Tenant::find(session('active_tenant_id'));
+    }
+
     public function mount()
     {
         $this->loadAvailableAttributes();
@@ -54,40 +63,38 @@ class AttributeValueManager extends Component
 
     public function loadAvailableAttributes()
     {
-        $this->availableAttributes = Attribute::select('id', 'name', 'display_type')->orderBy('name')->get();
+        // SCOPED: Only get attributes belonging to this tenant
+        $this->availableAttributes = Attribute::select('id', 'name', 'display_type')
+            ->orderBy('name')
+            ->get();
     }
 
-    // Define base rules
     protected $rules = [
-        'attribute_id' => 'required|exists:attributes,id',
         'value' => 'required|string|max:255',
-        // Slug and metadata rules will be dynamic
     ];
 
-    // Custom validation messages
-    protected $messages = [
-        'slug.unique' => 'This slug is already taken. Please try another one.',
-        'slug.alpha_dash' => 'The slug may only contain letters, numbers, dashes, and underscores.',
-        'metadataColor.regex' => 'Color must be a valid hex code (e.g., #RRGGBB or #RGB).',
-        'metadataImage.required' => 'An image is required for this attribute value.',
-        'metadataImage.image' => 'The metadata must be an image.',
-        'metadataImage.max' => 'The metadata image may not be greater than 1MB.',
-    ];
-
-    // Dynamically get validation rules, especially for unique slug and metadata
     private function getDynamicValidationRules()
     {
+        $tenantId = session('active_tenant_id');
+
         $dynamicRules = [
+            'attribute_id' => [
+                'required',
+                // SCOPED: Ensure parent attribute belongs to this store
+                Rule::exists('attributes', 'id')->where('tenant_id', $tenantId)
+            ],
             'slug' => [
                 'required',
                 'string',
                 'max:255',
                 'alpha_dash',
-                Rule::unique('attribute_values', 'slug')->ignore($this->attributeValueId),
+                // SCOPED UNIQUE: Allow same slug in different stores
+                Rule::unique('attribute_values', 'slug')
+                    ->where('tenant_id', $tenantId)
+                    ->ignore($this->attributeValueId),
             ],
         ];
 
-        // Add specific validation for metadata based on parent attribute's display type
         $parentAttribute = Attribute::find($this->attribute_id);
         if ($parentAttribute) {
             switch ($parentAttribute->display_type) {
@@ -95,27 +102,18 @@ class AttributeValueManager extends Component
                     $dynamicRules['metadataColor'] = ['required', 'string', 'max:7', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i'];
                     break;
                 case AttributeDisplayType::Image:
-                    // If editing and no new image, or creating and an image is present
                     if ($this->isEditing && !$this->metadataImage && $this->currentMetadataImage) {
-                        // No new file required, keep existing
-                        $dynamicRules['metadataImage'] = 'nullable|image|max:1024'; // Allow null if not uploading new
+                        $dynamicRules['metadataImage'] = 'nullable|image|max:1024';
                     } else {
-                        $dynamicRules['metadataImage'] = 'required|image|max:1024'; // Required for new entries of image type, or if a new image is provided
+                        $dynamicRules['metadataImage'] = 'required|image|max:1024';
                     }
                     break;
-                    // Add more cases for other display types if needed for specific metadata validation
             }
         }
         return array_merge($this->rules, $dynamicRules);
     }
 
-    // --- Table Methods ---
     public function updatingSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingPerPage()
     {
         $this->resetPage();
     }
@@ -130,7 +128,6 @@ class AttributeValueManager extends Component
         $this->sortField = $field;
     }
 
-    // --- Form Methods ---
     public function openModal()
     {
         $this->resetValidation();
@@ -150,8 +147,16 @@ class AttributeValueManager extends Component
         $this->openModal();
     }
 
-    public function editAttributeValue(AttributeValue $attributeValue)
+    public function editAttributeValue($id)
     {
+        // SCOPED FIND: Global scope handles security
+        $attributeValue = AttributeValue::find($id);
+
+        if (!$attributeValue) {
+            session()->flash('error', 'Value not found or access denied.');
+            return;
+        }
+
         $this->isEditing = true;
         $this->attributeValueId = $attributeValue->id;
         $this->attribute_id = $attributeValue->attribute_id;
@@ -159,7 +164,6 @@ class AttributeValueManager extends Component
         $this->slug = $attributeValue->slug;
         $this->metadata = $attributeValue->metadata;
 
-        // Populate metadata specific fields if they exist
         $parentAttribute = $attributeValue->attribute;
         if ($parentAttribute) {
             switch ($parentAttribute->display_type) {
@@ -187,25 +191,20 @@ class AttributeValueManager extends Component
                     $metadata['color'] = $this->metadataColor;
                     break;
                 case AttributeDisplayType::Image:
-                    // Handle image upload
                     if ($this->metadataImage) {
-                        // Delete old image if it exists and a new one is uploaded
                         if ($this->currentMetadataImage && Storage::disk('public')->exists($this->currentMetadataImage)) {
                             Storage::disk('public')->delete($this->currentMetadataImage);
                         }
                         $metadata['image'] = $this->metadataImage->store('attribute-values', 'public');
                     } elseif ($this->currentMetadataImage) {
-                        // If no new image but there's a current one, keep it
                         $metadata['image'] = $this->currentMetadataImage;
-                    } else {
-                        $metadata['image'] = null;
                     }
                     break;
-                    // Add other metadata processing based on display type
             }
         }
 
         $data = [
+            'tenant_id' => session('active_tenant_id'),
             'attribute_id' => $this->attribute_id,
             'value' => $this->value,
             'slug' => $this->slug,
@@ -213,44 +212,36 @@ class AttributeValueManager extends Component
         ];
 
         if ($this->isEditing) {
-            $attributeValue = AttributeValue::find($this->attributeValueId);
-            $attributeValue->update($data);
-            session()->flash('message', 'Attribute Value updated successfully!');
+            AttributeValue::find($this->attributeValueId)->update($data);
+            session()->flash('message', 'Value updated successfully!');
         } else {
             AttributeValue::create($data);
-            session()->flash('message', 'Attribute Value created successfully!');
+            session()->flash('message', 'Value created successfully!');
         }
 
         $this->closeModal();
         $this->resetPage();
     }
 
-    public function deleteAttributeValue($attributeValueId)
+    public function deleteAttributeValue($id)
     {
-        $attributeValue = AttributeValue::find($attributeValueId);
+        $attributeValue = AttributeValue::find($id);
 
-        if (!$attributeValue) {
-            session()->flash('error', 'Attribute Value not found.');
-            return;
-        }
+        if (!$attributeValue) return;
 
-        // Check for associations (e.g., products, variants) before deleting
         if ($attributeValue->products()->count() > 0 || $attributeValue->productVariants()->count() > 0) {
-            session()->flash('error', 'Cannot delete attribute value with associated products or variants.');
+            session()->flash('error', 'Cannot delete value with associated products.');
             return;
         }
 
-        // Delete metadata image if it exists
         if (isset($attributeValue->metadata['image']) && Storage::disk('public')->exists($attributeValue->metadata['image'])) {
             Storage::disk('public')->delete($attributeValue->metadata['image']);
         }
 
         $attributeValue->delete();
-        session()->flash('message', 'Attribute Value deleted successfully!');
+        session()->flash('message', 'Value deleted successfully!');
         $this->resetPage();
     }
-
-    // --- Utility Methods ---
 
     private function resetForm()
     {
@@ -258,15 +249,13 @@ class AttributeValueManager extends Component
         $this->attribute_id = null;
         $this->value = '';
         $this->slug = '';
-        $this->metadata = [];
         $this->metadataColor = null;
-        $this->metadataImage = null; // Clear temporary upload
-        $this->currentMetadataImage = null; // Clear existing image path
+        $this->metadataImage = null;
+        $this->currentMetadataImage = null;
         $this->isEditing = false;
         $this->resetValidation();
     }
 
-    // Auto-generate attribute value slug
     public function updatedValue($value)
     {
         if (empty($this->slug) || Str::slug($value) === $this->slug) {
@@ -274,29 +263,28 @@ class AttributeValueManager extends Component
         }
     }
 
-    // Clear temporary image when new one is selected
-    public function updatedMetadataImage()
-    {
-        $this->resetValidation('metadataImage');
-    }
-
     public function render()
     {
         $attributeValues = AttributeValue::query()
             ->with('attribute')
             ->when($this->search, function ($query) {
-                $query->where('value', 'like', '%' . $this->search . '%')
-                    ->orWhere('slug', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('attribute', function (Builder $q) {
-                        $q->where('name', 'like', '%' . $this->search . '%');
-                    });
+                /** 
+                 * Grouped search ensures global tenant scope is not bypassed
+                 */
+                $query->where(function ($q) {
+                    $q->where('value', 'like', '%' . $this->search . '%')
+                        ->orWhere('slug', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('attribute', function (Builder $attrQuery) {
+                            $attrQuery->where('name', 'like', '%' . $this->search . '%');
+                        });
+                });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.attribute.attribute-value-manager', [
+        return view('livewire.admin.attribute.attribute-value-manager', [
             'attributeValues' => $attributeValues,
-            'displayTypes' => AttributeDisplayType::labels(), // Pass to view for dynamic fields
+            'displayTypes' => AttributeDisplayType::labels(),
         ]);
     }
 }

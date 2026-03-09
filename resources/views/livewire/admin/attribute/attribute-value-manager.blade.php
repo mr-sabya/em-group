@@ -1,109 +1,90 @@
-<div class="py-4">
-    <h2 class="mb-4">Attribute Value Management</h2>
+<div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 mb-0">Attribute Value Management</h2>
+            <small class="text-muted">Active Store: <strong>{{ $this->currentTenant->name ?? 'Default' }}</strong></small>
+        </div>
+        <button class="btn btn-primary shadow-sm" wire:click="createAttributeValue">
+            <i class="fas fa-plus"></i> Add New Value
+        </button>
+    </div>
 
     @if (session()->has('message'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show mb-3">
         {{ session('message') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 
-    @if (session()->has('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Attribute Values List</h5>
-            <button class="btn btn-primary" wire:click="createAttributeValue">
-                <i class="fas fa-plus"></i> Add New Attribute Value
-            </button>
-        </div>
+    <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
-            <div class="row align-items-center mb-3">
-                <div class="col-md-6 col-lg-4">
-                    <input type="text" class="form-control" placeholder="Search attribute values..." wire:model.live.debounce.300ms="search">
-                </div>
-                <div class="col-md-6 col-lg-8 d-flex justify-content-md-end justify-content-start mt-2 mt-md-0">
-                    <div class="d-flex align-items-center gap-2">
-                        <select wire:model.live="perPage" class="form-select w-auto">
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                        </select>
-                        <span class="text-nowrap">Per Page</span>
+            <div class="row g-3 mb-3 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" placeholder="Search values..." wire:model.live.debounce.300ms="search">
                     </div>
+                </div>
+                <div class="col-md-8 d-flex justify-content-md-end gap-2">
+                    <select wire:model.live="perPage" class="form-select w-auto">
+                        <option value="10">10 Per Page</option>
+                        <option value="25">25 Per Page</option>
+                        <option value="50">50 Per Page</option>
+                    </select>
                 </div>
             </div>
 
             <div class="table-responsive">
-                <table class="table table-hover table-striped table-bordered mb-0">
-                    <thead>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
                             <th style="width: 50px;">ID</th>
-                            <th wire:click="sortBy('value')" role="button">Value
-                                @if ($sortField == 'value')
-                                <i class="fas {{ $sortDirection == 'asc' ? 'fa-sort-up' : 'fa-sort-down' }}"></i>
-                                @else
-                                <i class="fas fa-sort text-muted"></i>
-                                @endif
-                            </th>
+                            <th wire:click="sortBy('value')" role="button">Value @if($sortField=='value')<i class="fas fa-sort-{{$sortDirection=='asc'?'up':'down'}}"></i>@endif</th>
                             <th>Parent Attribute</th>
                             <th>Slug</th>
-                            <th>Metadata</th>
-                            <th style="width: 150px;">Actions</th>
+                            <th>Visual</th>
+                            <th style="width: 120px;" class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($attributeValues as $attributeValue)
-                        <tr>
-                            <td>{{ $attributeValue->id }}</td>
-                            <td>{{ $attributeValue->value }}</td>
+                        <tr wire:key="val-{{ $attributeValue->id }}">
+                            <td class="small text-muted">#{{ $attributeValue->id }}</td>
+                            <td class="fw-bold">{{ $attributeValue->value }}</td>
                             <td>
                                 @if ($attributeValue->attribute)
-                                <span class="badge bg-info">{{ $attributeValue->attribute->name }}</span>
+                                <span class="badge bg-info-subtle text-info border border-info-subtle">{{ $attributeValue->attribute->name }}</span>
                                 @else
-                                <span class="badge bg-warning">N/A</span>
+                                <span class="badge bg-light text-muted border">N/A</span>
                                 @endif
                             </td>
-                            <td>{{ $attributeValue->slug }}</td>
+                            <td><code class="small text-secondary">{{ $attributeValue->slug }}</code></td>
                             <td>
                                 @if ($attributeValue->metadata)
-                                @if ($attributeValue->attribute && $attributeValue->attribute->display_type == \App\Enums\AttributeDisplayType::Color && isset($attributeValue->metadata['color']))
-                                <div style="width: 25px; height: 25px; background-color: {{ $attributeValue->metadata['color'] }}; border: 1px solid #ccc; display: inline-block; vertical-align: middle;" title="{{ $attributeValue->metadata['color'] }}"></div>
-                                @elseif ($attributeValue->attribute && $attributeValue->attribute->display_type == \App\Enums\AttributeDisplayType::Image && isset($attributeValue->metadata['image']))
-                                <img src="{{ Storage::url($attributeValue->metadata['image']) }}" alt="Image" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: contain;">
-                                @else
-                                {{-- Fallback for other metadata types or if display type is not recognized --}}
-                                <pre class="mb-0 small" style="max-height: 80px; overflow-y: auto;">{{ json_encode($attributeValue->metadata, JSON_PRETTY_PRINT) }}</pre>
+                                @if ($attributeValue->attribute && $attributeValue->attribute->display_type == \App\Enums\AttributeDisplayType::Color)
+                                <div class="rounded shadow-sm border" style="width: 24px; height: 24px; background-color: {{ $attributeValue->metadata['color'] ?? '#eee' }}"></div>
+                                @elseif ($attributeValue->attribute && $attributeValue->attribute->display_type == \App\Enums\AttributeDisplayType::Image)
+                                <img src="{{ Storage::url($attributeValue->metadata['image'] ?? '') }}" class="img-thumbnail p-0" style="width: 32px; height: 32px; object-fit: cover;">
                                 @endif
                                 @else
-                                N/A
+                                —
                                 @endif
                             </td>
-                            <td>
-                                <button class="btn btn-sm btn-info me-1" wire:click="editAttributeValue({{ $attributeValue->id }})" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" wire:click="deleteAttributeValue({{ $attributeValue->id }})" wire:confirm="Are you sure you want to delete this attribute value?" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-info me-1 border-0" wire:click="editAttributeValue({{ $attributeValue->id }})"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-outline-danger border-0" wire:click="deleteAttributeValue({{ $attributeValue->id }})" wire:confirm="Are you sure?"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center">No attribute values found.</td>
+                            <td colspan="6" class="text-center py-5 text-muted">No values found for this store.</td>
                         </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <div class="mt-3">
+            <div class="mt-4">
                 {{ $attributeValues->links() }}
             </div>
         </div>

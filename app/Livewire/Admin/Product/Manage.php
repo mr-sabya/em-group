@@ -1,17 +1,16 @@
 <?php
 
-namespace App\Livewire\Product;
+namespace App\Livewire\Admin\Product;
 
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Enums\ProductType;
-use App\Enums\UserRole;
 use App\Enums\VolumeUnit;
 use App\Enums\WeightUnit;
-use App\Models\User;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\Attributes\Computed; // Added for Computed Property
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -64,12 +63,26 @@ class Manage extends Component
     // Categories
     public $selectedCategoryIds = [];
 
+    /**
+     * Computed Property to get current tenant info.
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return \App\Models\Tenant::find(session('active_tenant_id'));
+    }
+
     public function mount($productId = null)
     {
         if ($productId) {
-            $this->product = Product::with('categories')->findOrFail($productId);
-            $this->fill($this->product->toArray());
+            // Global Scope in Product model ensures we only find if it belongs to current tenant
+            $this->product = Product::with('categories')->find($productId);
 
+            if (!$this->product) {
+                return $this->redirect(route('product.products.index'), navigate: true);
+            }
+
+            $this->fill($this->product->toArray());
             $this->type = $this->product->type->value;
             $this->selectedCategoryIds = $this->product->categories->pluck('id')->toArray();
         } else {
@@ -80,25 +93,45 @@ class Manage extends Component
 
     protected function rules()
     {
+        $tenantId = session('active_tenant_id');
+
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', Rule::unique('products', 'slug')->ignore($this->product->id)],
-            'brand_id' => ['nullable', 'exists:brands,id'],
-            'sku' => ['nullable', 'string', Rule::unique('products', 'sku')->ignore($this->product->id)],
+            'slug' => [
+                'required',
+                'string',
+                // SCOPED UNIQUE: Allow same slug in different stores
+                Rule::unique('products', 'slug')
+                    ->where('tenant_id', $tenantId)
+                    ->ignore($this->product->id)
+            ],
+            'sku' => [
+                'nullable',
+                'string',
+                // SCOPED UNIQUE: Allow same SKU in different stores
+                Rule::unique('products', 'sku')
+                    ->where('tenant_id', $tenantId)
+                    ->ignore($this->product->id)
+            ],
+            'brand_id' => [
+                'nullable',
+                // Ensure brand belongs to this tenant
+                Rule::exists('brands', 'id')->where('tenant_id', $tenantId)
+            ],
             'type' => ['required', Rule::enum(ProductType::class)],
-
             'regular_price' => ['required', 'numeric', 'min:0'],
             'sale_price' => ['nullable', 'numeric', 'min:0'],
             'retail_price' => ['nullable', 'numeric', 'min:0'],
             'distributor_price' => ['nullable', 'numeric', 'min:0'],
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
-
             'is_manage_stock' => ['boolean'],
             'quantity' => ['required_if:is_manage_stock,true', 'numeric'],
-
             'selectedCategoryIds' => ['required', 'array', 'min:1'],
+            'selectedCategoryIds.*' => [
+                // Ensure linked categories belong to this tenant
+                Rule::exists('categories', 'id')->where('tenant_id', $tenantId)
+            ],
             'new_thumbnail_image' => ['nullable', 'image', 'max:2048'],
-
             'weight' => ['nullable', 'numeric'],
             'volume' => ['nullable', 'numeric'],
             'min_order_quantity' => ['required', 'integer', 'min:1'],
@@ -129,6 +162,7 @@ class Manage extends Component
         }
 
         $data = [
+            'tenant_id' => session('active_tenant_id'), // Explicitly ensure tenant_id is set
             'brand_id' => $this->brand_id,
             'name' => $this->name,
             'slug' => $this->slug,
@@ -160,7 +194,7 @@ class Manage extends Component
         $this->product->fill($data)->save();
 
         // Sync Categories
-        $this->product->categories()->sync($this->selectedCategoryIds);
+        $this->product->syncCategoriesWithTenant($this->selectedCategoryIds);
 
         session()->flash('message', 'Product saved successfully.');
         return $this->redirect(route('product.products.index'), navigate: true);
@@ -168,7 +202,8 @@ class Manage extends Component
 
     public function render()
     {
-        return view('livewire.product.manage', [
+        return view('livewire.admin.product.manage', [
+            // Model Global Scopes automatically filter these by tenant
             'categories_list' => Category::active()->get(),
             'brands_list' => Brand::active()->get(),
             'productTypes' => ProductType::cases(),

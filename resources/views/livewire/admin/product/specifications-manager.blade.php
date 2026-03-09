@@ -1,7 +1,7 @@
-<div class="container mt-4">
+<div>
     <div class="card">
-        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h3 class="mb-0">Technical Specifications: {{ $product->name }}</h3>
+        <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+            <h3 class="mb-0 text-white ">Technical Specifications: {{ $product->name }}</h3>
             <span class="badge bg-info">Separated from Variations</span>
         </div>
 
