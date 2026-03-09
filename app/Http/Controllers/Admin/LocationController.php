@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -10,18 +10,18 @@ class LocationController extends Controller
     //country
     public function countries()
     {
-        return view('backend.pages.locations.countries');
+        return view('admin.locations.countries');
     }
 
     // state
     public function states()
     {
-        return view('backend.pages.locations.states');
+        return view('admin.locations.states');
     }
 
     // city
     public function cities()
     {
-        return view('backend.pages.locations.cities');
+        return view('admin.locations.cities');
     }
 }
