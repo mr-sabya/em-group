@@ -1,65 +1,62 @@
 <div class="py-4">
-    <h2 class="mb-4">{{ $collectionId ? 'Edit Collection: ' . $title : 'Create New Collection' }}</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0 h4">{{ $collectionId ? 'Edit Collection: ' . $title : 'Create New Collection' }}</h2>
+            <p class="text-muted small mb-0">Active Store: <strong>{{ $this->currentTenant->name }}</strong></p>
+        </div>
+        <a href="{{ route('collection.index') }}" class="btn btn-outline-secondary btn-sm" wire:navigate>
+            <i class="fas fa-arrow-left me-1"></i> Back to Collections
+        </a>
+    </div>
 
     @if (session()->has('message'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('message') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="alert alert-success border-0 shadow-sm alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i> {{ session('message') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 
-    @if (session()->has('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    @endif
-
-    <div class="card shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">{{ $collectionId ? 'Edit Collection Details' : 'New Collection Details' }}</h5>
-            <a href="{{ route('collection.index') }}" class="btn btn-secondary" wire:navigate>
-                <i class="fas fa-arrow-left"></i> Back to Collections
-            </a>
-        </div>
-        <div class="card-body">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
             <form wire:submit.prevent="saveCollection">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="name" class="form-label">Collection Identifier (Slug/Name)</label>
-                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" wire:model.defer="name">
+                        <label for="name" class="form-label fw-bold">Collection Identifier (Slug/Name) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" wire:model.blur="name">
                         @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        <small class="form-text text-muted">A unique identifier, e.g., "sunglass-deals"</small>
+                        <small class="form-text text-muted">A unique identifier for this store, e.g., "winter-collection-2024"</small>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="title" class="form-label">Display Title</label>
-                        <input type="text" class="form-control @error('title') is-invalid @enderror" id="title" wire:model.defer="title">
+                        <label for="title" class="form-label fw-bold">Display Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control @error('title') is-invalid @enderror" id="title" wire:model.blur="title">
                         @error('title') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
+                    <label for="description" class="form-label fw-bold">Description</label>
                     <textarea class="form-control @error('description') is-invalid @enderror" id="description" rows="3" wire:model.defer="description"></textarea>
                     @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label for="featured_price" class="form-label">Featured Price</label>
-                        <input type="number" step="0.01" class="form-control @error('featured_price') is-invalid @enderror" id="featured_price" wire:model.defer="featured_price">
-                        @error('featured_price') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        <small class="form-text text-muted">A representative price for the collection.</small>
+                        <label for="featured_price" class="form-label fw-bold">Featured Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted">৳</span>
+                            <input type="number" step="0.01" class="form-control @error('featured_price') is-invalid @enderror" id="featured_price" wire:model.defer="featured_price">
+                        </div>
+                        @error('featured_price') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="tag" class="form-label">Tag (e.g., "SALE", "NEW")</label>
-                        <input type="text" class="form-control @error('tag') is-invalid @enderror" id="tag" wire:model.defer="tag">
+                        <label for="tag" class="form-label fw-bold">Tag (e.g., "SALE", "HOT")</label>
+                        <input type="text" class="form-control @error('tag') is-invalid @enderror" id="tag" wire:model.defer="tag" placeholder="Optional">
                         @error('tag') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4 mb-3">
-                        <label for="category_id" class="form-label">Category</label>
-                        <select class="form-select form-control @error('category_id') is-invalid @enderror" id="category_id" wire:model.defer="category_id">
-                            <option value="">-- Select Category --</option>
+                        <label for="category_id" class="form-label fw-bold">Store Category</label>
+                        <select class="form-select @error('category_id') is-invalid @enderror" id="category_id" wire:model.defer="category_id">
+                            <option value="">-- No Category --</option>
                             @foreach ($categories as $category)
                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                             @endforeach
@@ -68,50 +65,53 @@
                     </div>
                 </div>
 
-                {{-- Image Upload Field --}}
-                <div class="mb-3">
-                    <label for="imageFile" class="form-label">Collection Image</label>
-                    <div class="image-preview">
-                        @if ($imageFile)
-                        <img src="{{ $imageFile->temporaryUrl() }}" class="upload-image img-thumbnail" style="max-height: 150px;">
-                        @elseif ($image_path)
-                        <img src="{{ Storage::url($image_path) }}" alt="{{ $image_alt ?? 'Collection Image' }}" class="upload-image img-thumbnail" style="max-height: 150px;">
-                        @endif
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Collection Thumbnail</label>
+                        <div class="mb-3 border rounded p-3 bg-light d-flex flex-column align-items-center justify-content-center" style="min-height: 200px;">
+                            @if ($imageFile)
+                            <img src="{{ $imageFile->temporaryUrl() }}" class="img-thumbnail shadow-sm mb-2" style="max-height: 150px;">
+                            @elseif ($image_path)
+                            <img src="{{ Storage::url($image_path) }}" alt="{{ $image_alt ?? 'Collection' }}" class="img-thumbnail shadow-sm mb-2" style="max-height: 150px;">
+                            @else
+                            <div class="text-muted text-center">
+                                <i class="fas fa-image fa-3x mb-2 opacity-25"></i>
+                                <p class="small mb-0">No image uploaded yet</p>
+                            </div>
+                            @endif
+                            <input type="file" class="form-control mt-3 @error('imageFile') is-invalid @enderror" id="imageFile" wire:model.live="imageFile">
+                            @error('imageFile') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div wire:loading wire:target="imageFile" class="text-primary small mt-2">Uploading image...</div>
+                        </div>
                     </div>
-                    <input type="file" class="form-control @error('imageFile') is-invalid @enderror" id="imageFile" wire:model.live="imageFile">
-                    <small class="form-text text-muted">Max 1MB. Accepted formats: JPG, PNG, GIF, WebP.</small>
-                    @error('imageFile') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    <div wire:loading wire:target="imageFile">Uploading...</div>
-                </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="image_alt" class="form-label fw-bold">Image Alt Text (SEO)</label>
+                            <input type="text" class="form-control @error('image_alt') is-invalid @enderror" id="image_alt" wire:model.defer="image_alt" placeholder="Description for search engines">
+                            @error('image_alt') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
 
-                <div class="mb-3">
-                    <label for="image_alt" class="form-label">Image Alt Text</label>
-                    <input type="text" class="form-control @error('image_alt') is-invalid @enderror" id="image_alt" wire:model.defer="image_alt" placeholder="Descriptive text for the image">
-                    @error('image_alt') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
+                        <div class="mb-4">
+                            <label for="display_order" class="form-label fw-bold">Display Priority</label>
+                            <input type="number" class="form-control @error('display_order') is-invalid @enderror" id="display_order" wire:model.defer="display_order" min="0">
+                            @error('display_order') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <div class="form-check">
+                        <div class="form-check form-switch p-0 ms-4">
                             <input class="form-check-input" type="checkbox" id="is_active" wire:model.defer="is_active">
-                            <label class="form-check-label" for="is_active">
-                                Is Active
+                            <label class="form-check-label fw-bold ms-2" for="is_active">
+                                Show in Store (Active)
                             </label>
                         </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="display_order" class="form-label">Display Order</label>
-                        <input type="number" class="form-control @error('display_order') is-invalid @enderror" id="display_order" wire:model.defer="display_order" min="0">
-                        @error('display_order') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    </div>
                 </div>
 
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">
-                        <span wire:loading wire:target="saveCollection, imageFile" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <div class="mt-5 pt-3 border-top d-flex justify-content-end gap-2">
+                    <a href="{{ route('collection.index') }}" class="btn btn-light border px-4" wire:navigate>Cancel</a>
+                    <button type="submit" class="btn btn-primary px-5 shadow-sm">
+                        <span wire:loading wire:target="saveCollection" class="spinner-border spinner-border-sm me-2"></span>
                         {{ $collectionId ? 'Update Collection' : 'Create Collection' }}
                     </button>
-                    <a href="{{ route('collection.index') }}" class="btn btn-secondary" wire:navigate>Cancel</a>
                 </div>
             </form>
         </div>

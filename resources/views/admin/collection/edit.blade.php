@@ -1,5 +1,5 @@
-@extends('backend.layouts.app')
+@extends('admin.layouts.app')
 
 @section('content')
-<livewire:collection.manage collectionId="{{ $collectionId }}" />
+<livewire:admin.collection.manage collectionId="{{ $collectionId }}" />
 @endsection

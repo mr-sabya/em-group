@@ -1,11 +1,13 @@
 <?php
 
-namespace App\Livewire\Deal;
+namespace App\Livewire\Admin\Deal;
 
 use App\Models\Deal;
+use App\Models\Tenant;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Title; // Livewire 3 title attribute
+use Livewire\Attributes\Title;
+use Livewire\Attributes\Computed; // Added
 
 class Index extends Component
 {
@@ -17,6 +19,15 @@ class Index extends Component
     public $sortDirection = 'desc';
 
     protected $queryString = ['search', 'perPage', 'sortField', 'sortDirection'];
+
+    /**
+     * Computed property to get the active store/tenant info.
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return Tenant::find(session('active_tenant_id'));
+    }
 
     public function updatingSearch()
     {
@@ -35,8 +46,17 @@ class Index extends Component
 
     public function deleteDeal($id)
     {
-        Deal::destroy($id);
-        session()->flash('message', 'Deal deleted successfully.');
+        // Replaced Deal::destroy with find() to ensure the global tenant scope 
+        // validates that the user owns this record before deletion.
+        $deal = Deal::find($id);
+
+        if ($deal) {
+            $deal->delete();
+            session()->flash('message', 'Deal deleted successfully.');
+        } else {
+            session()->flash('error', 'Deal not found or access denied.');
+        }
+
         $this->resetPage();
     }
 
@@ -44,13 +64,19 @@ class Index extends Component
     {
         $deals = Deal::query()
             ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('description', 'like', '%' . $this->search . '%');
+                /** 
+                 * Grouped search closure is CRITICAL for multi-tenancy.
+                 * Prevents OR logic from bypassing the tenant_id scope.
+                 */
+                $query->where(function ($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('description', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.deal.index', [
+        return view('livewire.admin.deal.index', [
             'deals' => $deals,
         ]);
     }

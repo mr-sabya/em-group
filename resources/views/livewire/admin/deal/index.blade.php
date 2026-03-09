@@ -1,5 +1,11 @@
-<div class="py-4">
-    <h2 class="mb-4">Deal Management</h2>
+<div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 mb-0">Deals & Promotions</h2>
+            <small class="text-muted">Active Store: <strong>{{ $this->currentTenant->name ?? 'Default' }}</strong></small>
+        </div>
+        <a href="{{ route('deal.create') }}" wire:navigate class="btn btn-primary"><i class="fas fa-plus"></i> Create Deal</a>
+    </div>
 
     @if (session()->has('message'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -16,12 +22,7 @@
     @endif
 
     <div class="card shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">All Deals</h5>
-            <a href="{{ route('deal.create') }}" wire:navigate class="btn btn-primary">
-                <i class="fas fa-plus"></i> Create New Deal
-            </a>
-        </div>
+        
         <div class="card-body">
             <div class="row align-items-center mb-3">
                 <div class="col-md-6 col-lg-4 mb-2 mb-md-0">

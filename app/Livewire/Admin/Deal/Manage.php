@@ -1,15 +1,16 @@
 <?php
 
-namespace App\Livewire\Deal;
+namespace App\Livewire\Admin\Deal;
 
 use App\Models\Deal;
 use App\Models\Product;
+use App\Models\Tenant;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\Attributes\Computed; // Added
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Attributes\Title; // Keep Title attribute for page title
-
+use Livewire\Attributes\Title;
 
 class Manage extends Component
 {
@@ -17,12 +18,12 @@ class Manage extends Component
 
     public $dealId = null;
 
-    // Deal Form Properties - now just direct properties
+    // Deal Form Properties
     public $name;
     public $type = 'percentage';
     public $value;
     public $description;
-    public $banner_image_path; // This will hold the path in DB
+    public $banner_image_path;
     public $link_target;
     public $starts_at;
     public $expires_at;
@@ -31,7 +32,7 @@ class Manage extends Component
     public $display_order = 0;
 
     // Temporary property for file upload
-    public $imageFile; // This will temporarily hold the uploaded file instance
+    public $imageFile;
 
     // Product Selection Properties
     public $selectedProducts = [];
@@ -39,14 +40,22 @@ class Manage extends Component
     public $productSearchResults = [];
     public $showProductSearchResults = false;
 
-    // Validation rules are now defined as a protected property
+    /**
+     * Computed property to access current tenant context
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return Tenant::find(session('active_tenant_id'));
+    }
+
     protected $rules = [
         'name' => 'required|string|max:255',
         'type' => 'required|in:fixed,percentage',
         'value' => 'nullable|numeric|min:0',
         'description' => 'nullable|string',
-        'banner_image_path' => 'nullable|string', // This will be validated when saving the path
-        'imageFile' => 'nullable|image|max:1024', // Validation for the actual uploaded file
+        'banner_image_path' => 'nullable|string',
+        'imageFile' => 'nullable|image|max:1024',
         'link_target' => 'nullable|string|max:255',
         'starts_at' => 'nullable|date',
         'expires_at' => 'nullable|date|after_or_equal:starts_at',
@@ -66,12 +75,18 @@ class Manage extends Component
         $this->dealId = $dealId;
 
         if ($this->dealId) {
-            $deal = Deal::findOrFail($this->dealId);
+            // find() respects Global Tenant Scope - ensures security
+            $deal = Deal::find($this->dealId);
+
+            if (!$deal) {
+                return $this->redirectRoute('deal.index', navigate: true);
+            }
+
             $this->name = $deal->name;
             $this->type = $deal->type;
             $this->value = $deal->value;
             $this->description = $deal->description;
-            $this->banner_image_path = $deal->banner_image_path; // Load existing path
+            $this->banner_image_path = $deal->banner_image_path;
             $this->link_target = $deal->link_target;
             $this->starts_at = $deal->starts_at?->format('Y-m-d\TH:i');
             $this->expires_at = $deal->expires_at?->format('Y-m-d\TH:i');
@@ -92,17 +107,25 @@ class Manage extends Component
             return;
         }
 
-        $this->productSearchResults = Product::where('name', 'like', '%' . $value . '%')
-                                           ->whereNotIn('id', $this->selectedProducts)
-                                           ->limit(10)
-                                           ->get(['id', 'name', 'price'])
-                                           ->toArray();
+        // Grouped where to maintain tenant scope integrity
+        $this->productSearchResults = Product::query()
+            ->where(function ($q) use ($value) {
+                $q->where('name', 'like', '%' . $value . '%');
+            })
+            ->whereNotIn('id', $this->selectedProducts)
+            ->limit(10)
+            ->get(['id', 'name', 'regular_price'])
+            ->toArray();
+
         $this->showProductSearchResults = !empty($this->productSearchResults);
     }
 
     public function selectProductForDeal($productId)
     {
-        if (!in_array($productId, $this->selectedProducts)) {
+        // Double check product belongs to tenant before adding
+        $exists = Product::where('id', $productId)->exists();
+
+        if ($exists && !in_array($productId, $this->selectedProducts)) {
             $this->selectedProducts[] = $productId;
         }
         $this->productSearch = '';
@@ -124,37 +147,31 @@ class Manage extends Component
         return Product::whereIn('id', $this->selectedProducts)->get();
     }
 
-    /**
-     * Closes the product search results dropdown.
-     * This is called from the view using wire:click.outside="hideProductSearchResults"
-     */
     public function hideProductSearchResults()
     {
-        // Use a slight delay to allow potential clicks on search results to register
-        // before the results list disappears.
         $this->js('$wire.set(\'showProductSearchResults\', false);');
     }
 
     public function saveDeal()
     {
-        // Validate all properties including the imageFile
         $this->validate();
 
-        // Handle banner image upload
         if ($this->imageFile) {
-            // Delete old image if it exists and a new one is uploaded
             if ($this->banner_image_path && Storage::disk('public')->exists($this->banner_image_path)) {
                 Storage::disk('public')->delete($this->banner_image_path);
             }
             $this->banner_image_path = $this->imageFile->store('deals/banners', 'public');
         }
 
+        $tenantId = session('active_tenant_id');
+
         $data = [
+            'tenant_id' => $tenantId, // Explicitly set tenant_id
             'name' => $this->name,
             'type' => $this->type,
             'value' => $this->value,
             'description' => $this->description,
-            'banner_image_path' => $this->banner_image_path, // Now this holds the final path
+            'banner_image_path' => $this->banner_image_path,
             'link_target' => $this->link_target,
             'starts_at' => $this->starts_at ? Carbon::parse($this->starts_at) : null,
             'expires_at' => $this->expires_at ? Carbon::parse($this->expires_at) : null,
@@ -164,7 +181,7 @@ class Manage extends Component
         ];
 
         if ($this->dealId) {
-            $deal = Deal::findOrFail($this->dealId);
+            $deal = Deal::find($this->dealId);
             $deal->update($data);
             session()->flash('message', 'Deal updated successfully.');
         } else {
@@ -173,14 +190,20 @@ class Manage extends Component
             $this->dealId = $deal->id;
         }
 
-        $deal->products()->sync($this->selectedProducts);
+        /**
+         * FIXED: Sync pivot table with tenant_id to avoid "Field doesn't have a default value"
+         */
+        $syncData = [];
+        foreach ($this->selectedProducts as $id) {
+            $syncData[$id] = ['tenant_id' => $tenantId];
+        }
+        $deal->products()->sync($syncData);
 
-        // Redirect back to the index page after saving
         return $this->redirectRoute('deal.index', navigate: true);
     }
 
     public function render()
     {
-        return view('livewire.deal.manage');
+        return view('livewire.admin.deal.manage');
     }
 }

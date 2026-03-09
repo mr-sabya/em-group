@@ -1,10 +1,13 @@
 <?php
 
-namespace App\Livewire\Collection;
+namespace App\Livewire\Admin\Collection;
 
 use App\Models\Collection;
+use App\Models\Tenant;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed; // Added for Computed Property
 
 class Index extends Component
 {
@@ -16,6 +19,15 @@ class Index extends Component
     public $sortDirection = 'asc';
 
     protected $queryString = ['search', 'perPage', 'sortField', 'sortDirection'];
+
+    /**
+     * Computed property to access the active tenant info.
+     */
+    #[Computed]
+    public function currentTenant()
+    {
+        return Tenant::find(session('active_tenant_id'));
+    }
 
     public function updatingSearch()
     {
@@ -34,11 +46,18 @@ class Index extends Component
 
     public function deleteCollection($id)
     {
-        $collection = Collection::findOrFail($id);
-        // Optional: Delete associated image file
-        if ($collection->image_path && \Storage::disk('public')->exists($collection->image_path)) {
-            \Storage::disk('public')->delete($collection->image_path);
+        // Global scope ensures we only find collections belonging to the active tenant
+        $collection = Collection::find($id);
+
+        if (!$collection) {
+            session()->flash('error', 'Collection not found or access denied.');
+            return;
         }
+
+        if ($collection->image_path && Storage::disk('public')->exists($collection->image_path)) {
+            Storage::disk('public')->delete($collection->image_path);
+        }
+
         $collection->delete();
 
         session()->flash('message', 'Collection deleted successfully.');
@@ -48,16 +67,22 @@ class Index extends Component
     public function render()
     {
         $collections = Collection::query()
-            ->with('category') // Eager load category for display
+            ->with('category')
             ->when($this->search, function ($query) {
-                $query->where('title', 'like', '%' . $this->search . '%')
-                      ->orWhere('description', 'like', '%' . $this->search . '%')
-                      ->orWhere('tag', 'like', '%' . $this->search . '%');
+                /** 
+                 * Grouped OR conditions are CRITICAL for multi-tenancy.
+                 * This prevents the search from bypassing the Global Tenant Scope.
+                 */
+                $query->where(function ($q) {
+                    $q->where('title', 'like', '%' . $this->search . '%')
+                        ->orWhere('description', 'like', '%' . $this->search . '%')
+                        ->orWhere('tag', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.collection.index', [
+        return view('livewire.admin.collection.index', [
             'collections' => $collections,
         ]);
     }

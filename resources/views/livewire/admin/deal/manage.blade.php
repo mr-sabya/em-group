@@ -1,6 +1,13 @@
 <div class="py-4">
-    <h2 class="mb-4">{{ $dealId ? 'Edit Deal: ' . $name : 'Create New Deal' }}</h2>
-
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 mb-0">Deals & Promotions</h2>
+            <small class="text-muted">Active Store: <strong>{{ $this->currentTenant->name ?? 'Default' }}</strong></small>
+        </div>
+        <a href="{{ route('deal.index') }}" class="btn btn-secondary" wire:navigate>
+            <i class="fas fa-arrow-left"></i> Back to Deals
+        </a>
+    </div>
     @if (session()->has('message'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         {{ session('message') }}
@@ -16,12 +23,7 @@
     @endif
 
     <div class="card shadow-sm mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">{{ $dealId ? 'Edit Deal Details' : 'New Deal Details' }}</h5>
-            <a href="{{ route('deal.index') }}" class="btn btn-secondary" wire:navigate>
-                <i class="fas fa-arrow-left"></i> Back to Deals
-            </a>
-        </div>
+        
         <div class="card-body">
             <form wire:submit.prevent="saveDeal">
                 <div class="row">
