@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Page;
+namespace App\Livewire\Admin\Page;
 
 use App\Models\Page;
 use Livewire\Component;
@@ -15,30 +15,33 @@ class Manage extends Component
 
     public ?Page $page = null;
 
-    // Form Properties
+    // Form Properties mapped to your actual schema
+    public $tenant_id;
     public $title;
     public $slug;
+    public $page_type = 'landing';
+    public $status = 'draft';
+
+    // Content (stored as array in model, handled as string/HTML by editor)
     public $content;
-    public $banner_image_path; // Existing image
-    public $new_banner_image;  // New upload
+
+    // SEO & Meta
     public $meta_title;
     public $meta_description;
     public $meta_keywords;
-    public $template = 'default';
-    public $is_active = true;
-    public $sort_order = 0;
+    public $meta_robots = 'index, follow';
+    public $og_image_path; // Existing image
+    public $new_og_image;  // New upload
 
-    // Template Options (You can add more later)
-    public $templates = [
-        'default' => 'Default Template',
-        'full-width' => 'Full Width',
-        'contact' => 'Contact Page',
-        'about' => 'About Us',
-    ];
+    // Scheduling
+    public $published_at;
 
     public function mount($pageId = null)
     {
-        // 1. Find existing or create new
+        // For testing/example purposes, assigning a fixed tenant. 
+        // In real world, replace with: auth()->user()->tenant_id or current tenant session.
+        $this->tenant_id = 1;
+
         if ($pageId) {
             $this->page = Page::find($pageId);
         }
@@ -47,36 +50,41 @@ class Manage extends Component
             $this->page = new Page();
         }
 
-        // 2. Fill properties
         if ($this->page->exists) {
             $this->fill($this->page->toArray());
-            $this->banner_image_path = $this->page->banner_image;
+            $this->og_image_path = $this->page->og_image;
+            $this->published_at = $this->page->published_at ? $this->page->published_at->format('Y-m-d\TH:i') : null;
         } else {
             // Defaults for new page
-            $this->is_active = true;
-            $this->sort_order = 0;
-            $this->template = 'default';
+            $this->status = 'draft';
+            $this->page_type = 'landing';
+            $this->meta_robots = 'index, follow';
         }
     }
 
     protected function rules()
     {
         return [
+            'tenant_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:255'],
             'slug' => [
-                'nullable',
+                'required',
                 'string',
                 'max:255',
-                Rule::unique('pages', 'slug')->ignore($this->page->id)
+                // Unique per tenant
+                Rule::unique('pages', 'slug')
+                    ->where('tenant_id', $this->tenant_id)
+                    ->ignore($this->page->id)
             ],
+            'page_type' => ['required', 'string', 'max:255'],
+            'status' => ['required', 'in:draft,published'],
             'content' => ['nullable', 'string'],
-            'new_banner_image' => ['nullable', 'image', 'max:2048'], // 2MB Max
             'meta_title' => ['nullable', 'string', 'max:255'],
             'meta_description' => ['nullable', 'string', 'max:500'],
             'meta_keywords' => ['nullable', 'string', 'max:255'],
-            'template' => ['required', 'string', 'in:' . implode(',', array_keys($this->templates))],
-            'is_active' => ['boolean'],
-            'sort_order' => ['integer', 'min:0'],
+            'meta_robots' => ['nullable', 'string', 'max:255'],
+            'new_og_image' => ['nullable', 'image', 'max:2048'], // 2MB Max
+            'published_at' => ['nullable', 'date'],
         ];
     }
 
@@ -101,35 +109,36 @@ class Manage extends Component
         $this->validate();
 
         // Handle Image Upload
-        if ($this->new_banner_image) {
-            if ($this->page->banner_image) {
-                Storage::disk('public')->delete($this->page->banner_image);
+        if ($this->new_og_image) {
+            if ($this->og_image_path) {
+                Storage::disk('public')->delete($this->og_image_path);
             }
-            $this->banner_image_path = $this->new_banner_image->store('pages/banners', 'public');
+            $this->og_image_path = $this->new_og_image->store('pages/og_images', 'public');
         }
 
         // Prepare data
         $this->page->fill([
+            'tenant_id' => $this->tenant_id,
             'title' => $this->title,
-            'slug' => $this->slug ?? Str::slug($this->title),
-            'content' => $this->content,
-            'banner_image' => $this->banner_image_path,
+            'slug' => $this->slug,
+            'page_type' => $this->page_type,
+            'status' => $this->status,
+            'content' => $this->content, // Handled automatically as array by model casts
+            'og_image' => $this->og_image_path,
             'meta_title' => $this->meta_title,
             'meta_description' => $this->meta_description,
             'meta_keywords' => $this->meta_keywords,
-            'template' => $this->template,
-            'is_active' => $this->is_active,
-            'sort_order' => $this->sort_order,
+            'meta_robots' => $this->meta_robots,
+            'published_at' => $this->published_at ? \Carbon\Carbon::parse($this->published_at) : null,
         ])->save();
 
         session()->flash('message', 'Page ' . ($this->page->wasRecentlyCreated ? 'created' : 'updated') . ' successfully!');
 
-        // Redirect to Index or keep on edit
         return redirect()->route('page.index');
     }
 
     public function render()
     {
-        return view('livewire.page.manage');
+        return view('livewire.admin.page.manage');
     }
 }

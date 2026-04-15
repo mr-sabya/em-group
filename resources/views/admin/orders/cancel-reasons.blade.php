@@ -1,5 +1,5 @@
 @extends('admin.layouts.app')
 
 @section('content')
-<livewire:admin.page.manage />
+<livewire:admin.cancel-reasons.manage />
 @endsection

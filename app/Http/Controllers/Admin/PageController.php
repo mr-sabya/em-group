@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Page;
@@ -11,19 +11,19 @@ class PageController extends Controller
     //
     public function index()
     {
-        return view('backend.page.index');
+        return view('admin..page.index');
     }
 
     // create
     public function create()
     {
-        return view('backend.page.create');
+        return view('admin..page.create');
     }
 
     // edit
     public function edit($id)
     {
         $page = Page::findOrFail($id);
-        return view('backend.page.edit', compact('page'));
+        return view('admin..page.edit', compact('page'));
     }
 }

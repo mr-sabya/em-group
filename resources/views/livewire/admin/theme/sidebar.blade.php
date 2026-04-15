@@ -87,12 +87,23 @@
                     </div>
                 </li>
 
-                <!-- Orders, Deals, Collections -->
+                <!-- Orders and cancel reasons -->
                 <li class="nav-item">
-                    <a href="{{ route('order.index') }}" class="nav-link menu-link {{ request()->routeIs('order.index') ? 'active' : '' }}" wire:navigate>
-                        <i class="bi bi-cart3"></i> <span data-key="t-orders">Orders</span>
+                    <a class="nav-link menu-link {{ request()->routeIs('orders.*') ? 'active' : 'collapsed' }}" href="#orderManage" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('orders.*') ? 'true' : 'false' }}" aria-controls="orderManage">
+                        <i class="bi bi-cart-check"></i> <span data-key="t-orders">Orders</span>
                     </a>
+                    <div class="collapse menu-dropdown {{ request()->routeIs('orders.*') ? 'show' : '' }}" id="orderManage">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('orders.index') }}" class="nav-link {{ request()->routeIs('orders.index') ? 'active' : '' }}" wire:navigate> All Orders </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('orders.cancel-reasons') }}" class="nav-link {{ request()->routeIs('orders.cancel-reasons') ? 'active' : '' }}" wire:navigate> Cancel Reasons </a>
+                            </li>
+                        </ul>
+                    </div>
                 </li>
+
                 <li class="nav-item">
                     <a href="{{ route('deal.index') }}" class="nav-link menu-link {{ request()->routeIs('deal.index') ? 'active' : '' }}" wire:navigate>
                         <i class="bi bi-lightning-charge"></i> <span data-key="t-deals">Deals</span>
@@ -189,6 +200,20 @@
                 <li class="nav-item">
                     <a href="{{ route('settings.index') }}" class="nav-link menu-link {{ request()->routeIs('settings.index') ? 'active' : '' }}" wire:navigate>
                         <i class="bi bi-gear"></i> <span data-key="t-settings">Settings</span>
+                    </a>
+                </li>
+
+                <!-- pages -->
+                <li class="nav-item">
+                    <a href="{{ route('page.index') }}" class="nav-link menu-link {{ request()->routeIs('page.*') ? 'active' : '' }}" wire:navigate>
+                        <i class="bi bi-file-earmark-text"></i> <span data-key="t-pages">Pages</span>
+                    </a>
+                </li>
+
+                <!-- couriers -->
+                <li class="nav-item">
+                    <a href="{{ route('courier.index') }}" class="nav-link menu-link {{ request()->routeIs('courier.index') ? 'active' : '' }}" wire:navigate>
+                        <i class="bi bi-truck"></i> <span data-key="t-couriers">Couriers</span>
                     </a>
                 </li>
 

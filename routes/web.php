@@ -73,13 +73,16 @@ Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
         // permissions
         Route::get('/permissions', [App\Http\Controllers\Admin\UserController::class, 'permissions'])->name('permissions.index');
 
-        
+
         // roles
         Route::get('/roles', [App\Http\Controllers\Admin\UserController::class, 'roles'])->name('roles.index');
 
         // admins
         Route::prefix('admins')->name('admins.')->group(function () {
             Route::get('/', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('index');
+
+            Route::get('/profile', [App\Http\Controllers\Admin\AdminController::class, 'profile'])->name('profile');
+            Route::get('/change-password', [App\Http\Controllers\Admin\AdminController::class, 'changePassword'])->name('change-password');
         });
 
         // roles
@@ -117,13 +120,19 @@ Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
         Route::get('/ad-banner', [App\Http\Controllers\Admin\AdBannerController::class, 'index'])->name('ad-banner.index');
     });
 
+
     // orders
-    Route::get('/orders', [App\Http\Controllers\Admin\OrderController::class, 'index'])->name('order.index');
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('', [App\Http\Controllers\Admin\OrderController::class, 'index'])->name('index');
 
-    Route::get('/orders/{orderId}/invoice', [App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('orders.invoice');
+        Route::get('/{orderId}/invoice', [App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('invoice');
 
-    // manage order
-    Route::get('/orders/{orderId}/manage', [App\Http\Controllers\Admin\OrderController::class, 'manage'])->name('orders.manage');
+        // manage order
+        Route::get('/{orderId}/manage', [App\Http\Controllers\Admin\OrderController::class, 'manage'])->name('manage');
+
+        // cancel reasons
+        Route::get('/cancel-reasons', [App\Http\Controllers\Admin\OrderController::class, 'cancelReasons'])->name('cancel-reasons');
+    });
 
     // deals
     Route::prefix('deals')->name('deal.')->group(function () {
@@ -168,7 +177,6 @@ Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
     // payment methods
     Route::get('/payment-methods', [App\Http\Controllers\Admin\PaymentMethodController::class, 'index'])->name('payment-method.index');
 
-
-    Route::get('/profile', [App\Http\Controllers\Admin\AdminController::class, 'profile'])->name('profile');
-    Route::get('/change-password', [App\Http\Controllers\Admin\AdminController::class, 'changePassword'])->name('change-password');
+    // couriers
+    Route::get('/couriers', [App\Http\Controllers\Admin\CourierController::class, 'index'])->name('courier.index');
 });

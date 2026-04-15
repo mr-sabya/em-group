@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Page;
+namespace App\Livewire\Admin\Page;
 
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -89,7 +89,7 @@ class Index extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.page.index', [
+        return view('livewire.admin.page.index', [
             'pages' => $pages,
         ]);
     }

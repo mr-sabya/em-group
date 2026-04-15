@@ -26,4 +26,10 @@ class OrderController extends Controller
         $order = Order::findOrFail($orderId);
         return view('admin.orders.manage', compact('order'));
     }
+
+    // 
+    public function cancelReasons()
+    {
+        return view('admin.orders.cancel-reasons');
+    }
 }
