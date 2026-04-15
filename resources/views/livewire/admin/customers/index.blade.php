@@ -83,9 +83,9 @@
                                 <i class="fas {{ $customer->is_active ? 'fa-check-circle text-success' : 'fa-times-circle text-danger' }}"></i>
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-info" wire:click="editCustomer({{ $customer->id }})" title="Edit">
+                                <a class="btn btn-sm btn-info" href="{{ route('users.customers.edit', $customer->id) }}" wire:navigate title="Edit">
                                     <i class="fas fa-edit"></i>
-                                </button>
+</a>
                                 <button class="btn btn-sm btn-danger" onclick="confirm('Are you sure you want to delete this customer? This action cannot be undone.') || event.stopImmediatePropagation()" wire:click="deleteCustomer({{ $customer->id }})" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>

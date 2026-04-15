@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\BlogTag;
+namespace App\Livewire\Admin\BlogTag;
 
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -169,7 +169,7 @@ class Index extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.blog-tag.index', [
+        return view('livewire.admin.blog-tag.index', [
             'tags' => $tags,
         ]);
     }

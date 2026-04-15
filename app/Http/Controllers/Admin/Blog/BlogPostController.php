@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend\Blog;
+namespace App\Http\Controllers\Admin\Blog;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -10,18 +10,18 @@ class BlogPostController extends Controller
     // index
     public function index()
     {
-        return view('backend.blog.blog-post.index');    
+        return view('admin.blog.blog-post.index');    
     }
     
     // create new blog post
     public function create()
     {
-        return view('backend.blog.blog-post.create');    
+        return view('admin.blog.blog-post.create');    
     }
     
     //edit blog post by id
     public function edit($id)
     {
-        return view('backend.blog.blog-post.edit', ['blogPostId' => $id]);
+        return view('admin.blog.blog-post.edit', ['blogPostId' => $id]);
     }
 }

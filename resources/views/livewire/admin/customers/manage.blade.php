@@ -172,13 +172,7 @@
                             @error('slug') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
-                    <div class="col-md-6 d-flex align-items-center mb-3">
-                        <div class="form-check form-switch mt-3">
-                            <input class="form-check-input @error('is_active') is-invalid @enderror" type="checkbox" id="is_active" wire:model.defer="is_active">
-                            <label class="form-check-label ms-2" for="is_active">Is Active</label>
-                            @error('is_active') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
+                    
                 </div>
 
 

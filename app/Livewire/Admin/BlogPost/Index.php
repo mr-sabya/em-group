@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\BlogPost;
+namespace App\Livewire\Admin\BlogPost;
 
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -103,7 +103,7 @@ class Index extends Component
 
         $categories = BlogCategory::orderBy('name')->get(['id', 'name']);
 
-        return view('livewire.blog-post.index', [
+        return view('livewire.admin.blog-post.index', [
             'blogPosts' => $blogPosts,
             'categories' => $categories,
         ]);

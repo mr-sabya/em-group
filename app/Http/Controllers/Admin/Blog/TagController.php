@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend\Blog;
+namespace App\Http\Controllers\Admin\Blog;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -10,6 +10,6 @@ class TagController extends Controller
     //
     public function index()
     {
-        return view('backend.blog.tag.index');    
+        return view('admin.blog.tag.index');    
     }
 }

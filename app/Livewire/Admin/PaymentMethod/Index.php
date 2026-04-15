@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\PaymentMethod;
+namespace App\Livewire\Admin\PaymentMethod;
 
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -116,7 +116,7 @@ class Index extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.payment-method.index', [
+        return view('livewire.admin.payment-method.index', [
             'methods' => $methods
         ]);
     }

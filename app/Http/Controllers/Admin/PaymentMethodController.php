@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Backend;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -10,6 +10,6 @@ class PaymentMethodController extends Controller
     //
     public function index()
     {
-        return view('backend.payment-method.index');
+        return view('admin.payment-method.index');
     }
 }

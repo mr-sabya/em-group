@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Livewire\Customers; // Changed namespace
+namespace App\Livewire\Admin\Customers; // Changed namespace
 
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
-use App\Enums\UserRole; // Import the UserRole enum
 use Illuminate\Support\Facades\Auth;
 
 class Index extends Component
@@ -19,8 +18,6 @@ class Index extends Component
     public $sortDirection = 'asc';
     public $perPage = 10;
 
-    // We'll enforce the customer role here, no need for a filter in this component
-    // public $filterRole = UserRole::Customer->value;
 
     protected $listeners = ['customerSaved' => '$refresh', 'customerCreated' => '$refresh']; // Changed listener names
 
@@ -56,14 +53,9 @@ class Index extends Component
         return $this->redirect(route('customers.create'), navigate: true); // Changed route
     }
 
-    public function editCustomer($userId) // Changed method name
-    {
-        return $this->redirect(route('customers.edit', ['user' => $userId]), navigate: true); // Changed route
-    }
-
     public function deleteCustomer($userId) // Changed method name
     {
-        $user = User::where('role', UserRole::Customer->value)->find($userId); // Ensure we only delete customers
+        $user = User::find($userId); // Ensure we only delete customers
 
         if (!$user) {
             session()->flash('error', 'Customer not found.');
@@ -92,20 +84,19 @@ class Index extends Component
     public function render()
     {
         $customers = User::query()
-            ->where('role', UserRole::Customer->value) // Filter to only show customers
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                     ->orWhere('email', 'like', '%' . $this->search . '%')
                     ->orWhere('phone', 'like', '%' . $this->search . '%')
-                     // You might want to search by city/state/country name here too:
-                    ->orWhereHas('country', fn ($q) => $q->where('name', 'like', '%' . $this->search . '%'))
-                    ->orWhereHas('state', fn ($q) => $q->where('name', 'like', '%' . $this->search . '%'))
-                    ->orWhereHas('city', fn ($q) => $q->where('name', 'like', '%' . $this->search . '%'));
+                    // You might want to search by city/state/country name here too:
+                    ->orWhereHas('country', fn($q) => $q->where('name', 'like', '%' . $this->search . '%'))
+                    ->orWhereHas('state', fn($q) => $q->where('name', 'like', '%' . $this->search . '%'))
+                    ->orWhereHas('city', fn($q) => $q->where('name', 'like', '%' . $this->search . '%'));
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        return view('livewire.customers.index', [ // Changed view path
+        return view('livewire.admin.customers.index', [ // Changed view path
             'customers' => $customers,
         ]);
     }

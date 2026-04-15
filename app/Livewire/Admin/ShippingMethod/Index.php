@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\ShippingMethod;
+namespace App\Livewire\Admin\ShippingMethod;
 
 use App\Models\City;
 use App\Models\State;
@@ -180,7 +180,7 @@ class Index extends Component
 
     public function render()
     {
-        return view('livewire.shipping-method.index', [
+        return view('livewire.admin.shipping-method.index', [
             'methods' => ShippingMethod::with(['rules.city', 'rules.state', 'rules.country', 'paymentMethods'])
                 ->where('name', 'like', '%' . $this->search . '%')
                 ->when($this->statusFilter !== '', fn($q) => $q->where('status', $this->statusFilter))

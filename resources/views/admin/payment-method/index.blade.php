@@ -1,5 +1,5 @@
-@extends('backend.layouts.app')
+@extends('admin.layouts.app')
 
 @section('content')
-<livewire:payment-method.index />
+<livewire:admin.payment-method.index />
 @endsection

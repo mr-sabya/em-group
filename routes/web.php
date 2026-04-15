@@ -19,7 +19,7 @@ Route::middleware('guest:admin')->group(function () {
 
 Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\HomeController::class, 'index'])->name('dashboard');
-    
+
     // create tenant
     Route::get('/tenant/create', [App\Http\Controllers\Admin\TenantController::class, 'create'])->name('tenants.create');
 
@@ -70,20 +70,20 @@ Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
         });
 
 
-        // investors
-        Route::prefix('investors')->name('investors.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Admin\UserController::class, 'investors'])->name('index');
-            Route::get('/create', [App\Http\Controllers\Admin\UserController::class, 'createInvestor'])->name('create');
-            Route::get('/{id}/edit', [App\Http\Controllers\Admin\UserController::class, 'editInvestor'])->name('edit');
+        // permissions
+        Route::get('/permissions', [App\Http\Controllers\Admin\UserController::class, 'permissions'])->name('permissions.index');
+
+        
+        // roles
+        Route::get('/roles', [App\Http\Controllers\Admin\UserController::class, 'roles'])->name('roles.index');
+
+        // admins
+        Route::prefix('admins')->name('admins.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\AdminController::class, 'index'])->name('index');
         });
 
+        // roles
 
-        // vendors
-        Route::prefix('vendors')->name('vendors.')->group(function () {
-            Route::get('/', [App\Http\Controllers\Admin\UserController::class, 'vendors'])->name('index');
-            Route::get('/create', [App\Http\Controllers\Admin\UserController::class, 'createVendors'])->name('create');
-            Route::get('/{id}/edit', [App\Http\Controllers\Admin\UserController::class, 'editVendors'])->name('edit');
-        });
     });
 
 
@@ -95,11 +95,6 @@ Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
         Route::get('/cities', [App\Http\Controllers\Admin\LocationController::class, 'cities'])->name('cities');
     });
 
-    // investment
-    Route::prefix('investment')->name('investment.')->group(function () {
-        Route::get('/projects', [App\Http\Controllers\Admin\ProjectController::class, 'index'])->name('projects.index');
-        Route::get('/investments', [App\Http\Controllers\Admin\InvestmentController::class, 'index'])->name('investments.index');
-    });
 
     // attributes
     Route::prefix('attributes')->name('attribute.')->group(function () {

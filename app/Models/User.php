@@ -6,7 +6,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -15,22 +14,15 @@ class User extends Authenticatable
 
     /**
      * The attributes that are mass assignable.
+     * 
+     * Updated to match your schema: name, phone, email, password, avatar.
      */
     protected $fillable = [
         'name',
-        'slug',
         'phone',
         'email',
         'password',
         'avatar',
-        'date_of_birth',
-        'gender',
-        'address',
-        'country_id',
-        'state_id',
-        'city_id',
-        'zip_code',
-        'is_active',
     ];
 
     /**
@@ -49,8 +41,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'date_of_birth' => 'date',
-            'is_active' => 'boolean',
         ];
     }
 
@@ -60,45 +50,51 @@ class User extends Authenticatable
     |--------------------------------------------------------------------------
     */
 
-    // Location Relationships
-    public function country()
+    // App\Models\User.php
+    public function info()
     {
-        return $this->belongsTo(Country::class);
-    }
-    public function state()
-    {
-        return $this->belongsTo(State::class);
-    }
-    public function city()
-    {
-        return $this->belongsTo(City::class);
+        return $this->hasOne(UserInfo::class);
     }
 
-    // Business Relationships
+    /**
+     * Business Relationships
+     * Note: These work as long as the related tables have a 'user_id' or 'vendor_id'
+     */
     public function products()
     {
         return $this->hasMany(Product::class, 'vendor_id');
     }
+
     public function orders()
     {
         return $this->hasMany(Order::class);
     }
+
     public function reviews()
     {
         return $this->hasMany(Review::class);
     }
+
     public function addresses()
     {
         return $this->hasMany(Address::class);
     }
+
     public function wishlists()
     {
         return $this->hasMany(Wishlist::class);
     }
 
+    public function coupons()
+    {
+        return $this->belongsToMany(Coupon::class, 'coupon_user')
+            ->withPivot('tenant_id')
+            ->withTimestamps();
+    }
+
     /*
     |--------------------------------------------------------------------------
-    | Accessors & Mutators
+    | Accessors & Methods
     |--------------------------------------------------------------------------
     */
 
@@ -121,13 +117,5 @@ class User extends Authenticatable
             ->where('order_status', 'delivered')
             ->whereHas('orderItems', fn($q) => $q->where('product_id', $productId))
             ->exists();
-    }
-
-
-    public function coupons()
-    {
-        return $this->belongsToMany(Coupon::class, 'coupon_user')
-            ->withPivot('tenant_id')
-            ->withTimestamps();
     }
 }
