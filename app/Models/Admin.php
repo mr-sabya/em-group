@@ -91,4 +91,10 @@ class Admin extends Authenticatable
         }
         return true;
     }
+
+    // orders relationship for top agents leaderboard
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'admin_id');
+    }
 }

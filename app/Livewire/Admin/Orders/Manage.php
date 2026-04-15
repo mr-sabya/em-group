@@ -1,71 +1,241 @@
 <?php
 
-namespace App\Livewire\Orders;
+namespace App\Livewire\Admin\Orders;
 
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\User;
+use App\Models\UserInfo;
+use App\Models\Courier;
 use App\Enums\OrderStatus;
-use App\Enums\PaymentStatus;
+use App\Enums\OrderSource;
 use Livewire\Component;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class Manage extends Component
 {
-    public $orderId;
-    public $order;
+    public $orderId = null;
+    public $isEditMode = false;
 
-    // Form fields for updating
-    public $orderStatus;
-    public $paymentStatus;
-    public $trackingNumber;
+    // Form State
+    public $data = [
+        'name' => '',
+        'phone' => '',
+        'email' => '',
+        'address' => '',
+        'customer_note' => '',
+        'courier_note' => '',
+        'source' => 'landing_page',
+        'courier_id' => null,
+        'delivery_fee' => 0,
+        'discount' => 0,
+        'coupon_discount' => 0,
+        'subtotal' => 0,
+        'total_amount' => 0,
+        'paid_amount' => 0,
+        'status' => 'pending',
+        'user_id' => null, // The Agent/Admin
+    ];
 
-    public function mount($orderId)
+    public $orderItems = [];
+
+    // Customer Search State
+    public $customerSearch = '';
+    public $searchResults = [];
+    public $selectedCustomerId = null;
+    public $showCustomerForm = false;
+
+    public function mount($orderId = null)
     {
         $this->orderId = $orderId;
-        $this->loadOrder();
+
+        if ($this->orderId) {
+            $this->isEditMode = true;
+            $order = Order::with(['orderItems', 'user'])->findOrFail($this->orderId);
+
+            $this->data = $order->toArray();
+            $this->data['status'] = $order->status->value;
+            $this->data['source'] = $order->source->value;
+            $this->selectedCustomerId = $order->user_id;
+            $this->showCustomerForm = true;
+
+            foreach ($order->orderItems as $item) {
+                $this->orderItems[] = [
+                    'product_id' => $item->product_id,
+                    'variant_id' => $item->variant_id,
+                    'price' => $item->price,
+                    'discount' => $item->discount,
+                    'quantity' => $item->quantity,
+                    'total' => $item->total,
+                ];
+            }
+        } else {
+            $this->addItem();
+            $this->data['user_id'] = auth()->id();
+        }
     }
 
-    public function loadOrder()
+    // --- Customer Search Logic ---
+
+    public function updatedCustomerSearch($value)
     {
-        $this->order = Order::with([
-            'user',
-            'vendor',
-            'orderItems.product',
-            'shippingCity',
-            'shippingState',
-            'shippingCountry'
-        ])->findOrFail($this->orderId);
+        if (strlen($value) < 3) {
+            $this->searchResults = [];
+            return;
+        }
 
-        $this->orderStatus = $this->order->order_status->value;
-        $this->paymentStatus = $this->order->payment_status->value;
-        $this->trackingNumber = $this->order->tracking_number;
+        $this->searchResults = User::where('name', 'like', "%$value%")
+            ->orWhere('phone', 'like', "%$value%")
+            ->limit(5)->get();
     }
 
-    public function updateOrder()
+    public function selectCustomer($userId)
+    {
+        $user = User::with('info')->findOrFail($userId);
+        $this->selectedCustomerId = $user->id;
+        $this->data['name'] = $user->name;
+        $this->data['phone'] = $user->phone;
+        $this->data['email'] = $user->email;
+        $this->data['address'] = $user->info->address ?? '';
+
+        $this->showCustomerForm = true;
+        $this->searchResults = [];
+        $this->customerSearch = '';
+    }
+
+    public function createNewCustomer()
+    {
+        $this->selectedCustomerId = null;
+        $this->data['phone'] = is_numeric($this->customerSearch) ? $this->customerSearch : '';
+        $this->data['name'] = !is_numeric($this->customerSearch) ? $this->customerSearch : '';
+        $this->showCustomerForm = true;
+    }
+
+    // --- Order Item Logic ---
+
+    public function addItem()
+    {
+        $this->orderItems[] = ['product_id' => '', 'variant_id' => '', 'price' => 0, 'discount' => 0, 'quantity' => 1, 'total' => 0];
+    }
+
+    public function removeItem($index)
+    {
+        unset($this->orderItems[$index]);
+        $this->orderItems = array_values($this->orderItems);
+        $this->calculateTotals();
+    }
+
+    public function updatedOrderItems($value, $key)
+    {
+        $parts = explode('.', $key);
+        $index = $parts[0];
+        $field = $parts[1];
+
+        if ($field === 'product_id') {
+            $product = Product::find($value);
+            $this->orderItems[$index]['price'] = $product->sale_price ?? $product->regular_price;
+            $this->orderItems[$index]['variant_id'] = '';
+        }
+
+        if ($field === 'variant_id' && $value) {
+            $variant = ProductVariant::find($value);
+            $this->orderItems[$index]['price'] = $variant->sale_price ?? $variant->regular_price;
+        }
+
+        $item = &$this->orderItems[$index];
+        $item['total'] = ($item['price'] - $item['discount']) * $item['quantity'];
+        $this->calculateTotals();
+    }
+
+    public function updatedData()
+    {
+        $this->calculateTotals();
+    }
+
+    public function calculateTotals()
+    {
+        $this->data['subtotal'] = collect($this->orderItems)->sum('total');
+        $this->data['total_amount'] = ($this->data['subtotal'] + (float)$this->data['delivery_fee'])
+            - (float)$this->data['discount']
+            - (float)$this->data['coupon_discount'];
+    }
+
+    // --- Save Logic ---
+
+    public function save()
     {
         $this->validate([
-            'orderStatus' => 'required',
-            'paymentStatus' => 'required',
-            'trackingNumber' => 'nullable|string|max:100',
+            'data.name' => 'required|string|max:255',
+            'data.phone' => 'required|string',
+            'data.address' => 'required|min:5',
+            'orderItems.*.product_id' => 'required',
         ]);
 
-        $this->order->update([
-            'order_status' => $this->orderStatus,
-            'payment_status' => $this->paymentStatus,
-            'tracking_number' => $this->trackingNumber,
-            // Update timestamps based on status
-            'shipped_at' => ($this->orderStatus === OrderStatus::Shipped->value) ? now() : $this->order->shipped_at,
-            'delivered_at' => ($this->orderStatus === OrderStatus::Delivered->value) ? now() : $this->order->delivered_at,
-            'cancelled_at' => ($this->orderStatus === OrderStatus::Cancelled->value) ? now() : $this->order->cancelled_at,
-        ]);
+        DB::transaction(function () {
+            // 1. Handle User Creation/Link
+            $userId = $this->selectedCustomerId;
 
-        session()->flash('message', 'Order updated successfully!');
-        $this->loadOrder(); // Refresh data
+            if (!$userId) {
+                // Check if user exists by phone to avoid duplicates
+                $existingUser = User::where('phone', $this->data['phone'])->first();
+
+                if ($existingUser) {
+                    $userId = $existingUser->id;
+                } else {
+                    $newUser = User::create([
+                        'name' => $this->data['name'],
+                        'phone' => $this->data['phone'],
+                        'email' => $this->data['email'] ?: null,
+                        'password' => Hash::make($this->data['phone']), // Phone as password
+                    ]);
+
+                    UserInfo::create([
+                        'user_id' => $newUser->id,
+                        'phone' => $this->data['phone'],
+                        'address' => $this->data['address'],
+                    ]);
+
+                    $userId = $newUser->id;
+                }
+            }
+
+            // 2. Save Order
+            $order = Order::updateOrCreate(
+                ['id' => $this->orderId],
+                array_merge($this->data, [
+                    'user_id' => $userId, // Linked customer
+                    'admin_id' => auth()->id(), // Current admin
+                    'tenant_id' => session('active_tenant_id')
+                ])
+            );
+
+            // 3. Sync Items
+            $order->orderItems()->delete();
+            foreach ($this->orderItems as $item) {
+                $product = Product::find($item['product_id']);
+                OrderItem::create(array_merge($item, [
+                    'order_id' => $order->id,
+                    'item_name' => $product->name,
+                    'tenant_id' => session('active_tenant_id')
+                ]));
+            }
+        });
+
+        session()->flash('message', 'Order saved successfully.');
+        return redirect()->route('admin.orders.index');
     }
 
     public function render()
     {
-        return view('livewire.orders.manage', [
-            'orderStatuses' => OrderStatus::cases(),
-            'paymentStatuses' => PaymentStatus::cases(),
+        return view('livewire.admin.orders.manage', [
+            'products' => Product::active()->get(),
+            'couriers' => Courier::all(),
+            'statuses' => OrderStatus::cases(),
+            'sources' => OrderSource::cases(),
         ]);
     }
 }

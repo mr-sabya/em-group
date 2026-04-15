@@ -124,11 +124,10 @@ Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
     // orders
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('', [App\Http\Controllers\Admin\OrderController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\Admin\OrderController::class, 'create'])->name('create');
+        Route::get('/{orderId}/edit', [App\Http\Controllers\Admin\OrderController::class, 'edit'])->name('edit');
 
         Route::get('/{orderId}/invoice', [App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('invoice');
-
-        // manage order
-        Route::get('/{orderId}/manage', [App\Http\Controllers\Admin\OrderController::class, 'manage'])->name('manage');
 
         // cancel reasons
         Route::get('/cancel-reasons', [App\Http\Controllers\Admin\OrderController::class, 'cancelReasons'])->name('cancel-reasons');

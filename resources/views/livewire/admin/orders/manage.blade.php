@@ -1,241 +1,255 @@
 <div>
-    @if (session()->has('message'))
-    <div class="alert alert-success border-0 shadow-sm mb-4">
-        <i class="fas fa-check-circle me-2"></i> {{ session('message') }}
-    </div>
-    @endif
-
-    <div class="row">
-        <!-- Main Order Details -->
-        <div class="col-lg-8">
-            <!-- Order Info Header -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h4 class="mb-0">Order #{{ $order->order_number }}</h4>
-                            <p class="text-muted mb-0">
-                                Customer:
-                                <span class="fw-bold text-dark">
-                                    {{ $order->user->name ?? $order->billing_first_name . ' ' . $order->billing_last_name }}
-                                </span>
-                                @if(!$order->user)
-                                <span class="badge bg-secondary ms-1" style="font-size: 0.7rem;">GUEST</span>
-                                @endif
-                            </p>
-                        </div>
-                        <div>
-                            <span class="badge {{ $order->order_status->badgeColor() }} p-2">{{ $order->order_status->label() }}</span>
-                            <span class="badge {{ $order->payment_status->badgeColor() }} p-2">{{ $order->payment_status->label() }}</span>
-                        </div>
-                    </div>
-                    <p class="text-muted mb-0 small">Placed on: {{ $order->placed_at?->format('d M, Y h:i A') }}</p>
-                </div>
-            </div>
-
-            <!-- Items Table -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3">
-                    <h5 class="mb-0"><i class="fas fa-shopping-basket me-2"></i> Order Items</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th>Product</th>
-                                    <th>Price</th>
-                                    <th>Qty</th>
-                                    <th class="text-end">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($order->orderItems as $item)
-                                <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <img src="{{ $item->product->thumbnail_url }}" style="width: 50px; height: 50px; object-fit: cover;" class="rounded me-3">
-                                            <div>
-                                                <div class="fw-bold">{{ $item->item_name }}</div>
-                                                <small class="text-muted">SKU: {{ $item->item_sku }}</small>
-                                                @if($item->item_attributes)
-                                                <div class="mt-1">
-                                                    @foreach($item->item_attributes as $key => $val)
-                                                    <span class="badge bg-light text-dark border" style="font-size: 0.7rem;">{{ $key }}: {{ $val }}</span>
-                                                    @endforeach
-                                                </div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>৳{{ number_format($item->unit_price, 2) }}</td>
-                                    <td>{{ $item->quantity }}</td>
-                                    <td class="text-end">৳{{ number_format($item->subtotal, 2) }}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot class="bg-light">
-                                <tr>
-                                    <td colspan="3" class="text-end fw-bold">Subtotal:</td>
-                                    <td class="text-end">৳{{ number_format($order->subtotal, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="text-end fw-bold">Shipping:</td>
-                                    <td class="text-end">৳{{ number_format($order->shipping_cost, 2) }}</td>
-                                </tr>
-                                <tr class="fs-5">
-                                    <td colspan="3" class="text-end fw-bold text-primary">Grand Total:</td>
-                                    <td class="text-end fw-bold text-primary">৳{{ number_format($order->total_amount, 2) }}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Addresses -->
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white"><strong><i class="fas fa-truck me-2"></i> Shipping Address</strong></div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>{{ $order->shipping_first_name }} {{ $order->shipping_last_name }}</strong></p>
-                            <p class="mb-1">{{ $order->shipping_address_line_1 }}</p>
-                            @if($order->shipping_address_line_2) <p class="mb-1">{{ $order->shipping_address_line_2 }}</p> @endif
-                            <p class="mb-1">{{ $order->shippingCity?->name }}, {{ $order->shippingState?->name }}</p>
-                            <p class="mb-1">{{ $order->shippingCountry?->name }}, {{ $order->shipping_zip_code }}</p>
-                            <p class="mb-0 mt-2 small text-muted"><i class="fas fa-phone me-2"></i> {{ $order->shipping_phone }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white"><strong><i class="fas fa-file-invoice me-2"></i> Billing Address</strong></div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>{{ $order->billing_first_name }} {{ $order->billing_last_name }}</strong></p>
-                            <p class="mb-1">{{ $order->billing_address_line_1 }}</p>
-                            <p class="mb-2"><i class="fas fa-envelope me-2"></i> {{ $order->billing_email }}</p>
-                            <p class="mb-0 small text-muted"><i class="fas fa-phone me-2"></i> {{ $order->billing_phone }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
+    <!-- Header -->
+    <div class="row align-items-center mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item small"><a href="{{ route('orders.index') }}" class="text-decoration-none text-muted">Orders</a></li>
+                    <li class="breadcrumb-item active small">{{ $isEditMode ? 'Edit Order #'.$data['order_number'] : 'Create New Order' }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 fw-bold text-dark mb-0">{{ $isEditMode ? 'Modify Order' : 'New Order Placement' }}</h1>
         </div>
+    </div>
 
-        <!-- Sidebar Actions -->
-        <div class="col-lg-4">
+    <form wire:submit.prevent="save">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Customer Selection Section -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-light border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-user-circle me-2"></i> Customer Details</h5>
+                        @if($showCustomerForm)
+                        <button type="button" wire:click="$set('showCustomerForm', false)" class="btn btn-sm btn-outline-secondary border-0">
+                            <i class="fas fa-search me-1"></i> Switch Customer
+                        </button>
+                        @endif
+                    </div>
+                    <div class="card-body p-4">
+                        @if(!$showCustomerForm)
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-3">Search for a registered customer or enter details manually</p>
+                            <div class="position-relative mx-auto" style="max-width: 500px;">
+                                <!-- Search Input Group -->
+                                <div class="input-group border rounded-pill overflow-hidden bg-light shadow-sm">
+                                    <span class="input-group-text border-0 bg-transparent ps-3">
+                                        <i class="fas fa-search text-dark"></i>
+                                    </span>
+                                    <input type="text"
+                                        wire:model.live.debounce.300ms="customerSearch"
+                                        class="form-control border-0 shadow-none py-2"
+                                        placeholder="Search by name or phone number...">
+                                </div>
 
-            <!-- Suggested Layout for the Shipping & Payment section -->
-            <div class="row g-4 mb-4">
-                <!-- Shipping Information -->
-                <div class="col-md-12">
-                    <div class="card h-100 border shadow-none">
-                        <div class="card-header bg-light fw-bold">
-                            <i class="fas fa-truck me-2"></i> Shipping Details
+                                <!-- 1. Show Results Dropdown if count > 0 -->
+                                @if(count($searchResults) > 0)
+                                <div class="position-absolute w-100 mt-2 shadow-lg bg-light border rounded-3 text-start overflow-hidden" style="z-index: 1050;">
+                                    @foreach($searchResults as $user)
+                                    <button type="button"
+                                        wire:click="selectCustomer({{ $user->id }})"
+                                        class="btn btn-white w-100 text-start border-bottom p-3 hover-light transition border-0">
+                                        <div class="fw-bold text-dark">{{ $user->name }}</div>
+                                        <div class="small text-muted"><i class="fas fa-phone-alt me-1"></i> {{ $user->phone }}</div>
+                                    </button>
+                                    @endforeach
+                                </div>
+
+                                <!-- 2. If search string is long enough but results are empty -->
+                                @elseif(strlen($customerSearch) >= 3)
+                                <div class="card mt-3 border-dashed bg-light">
+                                    <div class="card-body text-center py-3">
+                                        <p class="text-muted small mb-3">
+                                            <i class="fas fa-user-slash me-1"></i> No registered customer found for "{{ $customerSearch }}"
+                                        </p>
+                                        <button type="button"
+                                            wire:click="createNewCustomer"
+                                            class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                                            <i class="fas fa-user-plus me-1"></i> Create Manual Customer
+                                        </button>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <p class="mb-1"><strong>Method:</strong> {{ $order->shipping_method_name }}</p>
-                            <p class="mb-1"><strong>Recipient:</strong> {{ $order->shipping_first_name }} {{ $order->shipping_last_name }}</p>
-                            <p class="mb-1"><strong>Phone:</strong> {{ $order->shipping_phone }}</p>
-                            <p class="mb-0"><strong>Address:</strong><br>
-                                <span class="text-muted small">
-                                    {{ $order->shipping_address_line_1 }}<br>
-                                    {{ $order->shippingCity?->name }}, {{ $order->shippingState?->name }}, {{ $order->shipping_zip_code }}
-                                </span>
-                            </p>
+                        @else
+                        <div class="row g-3">
+                            @if($selectedCustomerId)
+                            <div class="col-12">
+                                <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill"><i class="fas fa-link me-1"></i> Linked to User ID: #{{ $selectedCustomerId }}</div>
+                            </div>
+                            @endif
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Phone*</label>
+                                <input type="text" wire:model.blur="data.phone" class="form-control shadow-none border-light-subtle">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Full Name*</label>
+                                <input type="text" wire:model="data.name" class="form-control shadow-none border-light-subtle">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Shipping Address*</label>
+                                <textarea wire:model="data.address" class="form-control shadow-none border-light-subtle" rows="2"></textarea>
+                            </div>
                         </div>
+                        @endif
                     </div>
                 </div>
 
-                <!-- Payment Information -->
-                <div class="col-md-12">
-                    <div class="card h-100 border shadow-none">
-                        <div class="card-header bg-light fw-bold">
-                            <i class="fas fa-credit-card me-2"></i> Payment Details
+                <!-- Order Items Card -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0 text-primary"><i class="fas fa-shopping-basket me-2"></i> Order Items</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="ps-4 border-0 small text-uppercase text-muted">Product</th>
+                                        <th class="border-0 small text-uppercase text-muted">Variant</th>
+                                        <th class="border-0 small text-uppercase text-muted" style="width: 120px;">Price</th>
+                                        <th class="border-0 small text-uppercase text-muted" style="width: 100px;">Qty</th>
+                                        <th class="border-0 small text-uppercase text-muted" style="width: 120px;">Total</th>
+                                        <th class="pe-4 border-0"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($orderItems as $index => $item)
+                                    <tr>
+                                        <td class="ps-4">
+                                            <select wire:model.live="orderItems.{{ $index }}.product_id" class="form-select border-light-subtle shadow-none">
+                                                <option value="">Select Product</option>
+                                                @foreach($products as $p) <option value="{{ $p->id }}">{{ $p->name }}</option> @endforeach
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select wire:model.live="orderItems.{{ $index }}.variant_id" class="form-select border-light-subtle shadow-none" {{ empty($orderItems[$index]['product_id']) ? 'disabled' : '' }}>
+                                                <option value="">Default</option>
+                                                @if(!empty($orderItems[$index]['product_id']))
+                                                @foreach($products->find($orderItems[$index]['product_id'])->variants as $v)
+                                                <option value="{{ $v->id }}">{{ $v->display_name }}</option>
+                                                @endforeach
+                                                @endif
+                                            </select>
+                                        </td>
+                                        <td><input type="number" wire:model.blur="orderItems.{{ $index }}.price" class="form-control shadow-none border-light-subtle"></td>
+                                        <td><input type="number" wire:model.live="orderItems.{{ $index }}.quantity" class="form-control shadow-none border-light-subtle"></td>
+                                        <td>
+                                            <div class="fw-bold text-dark">৳{{ number_format($orderItems[$index]['total'], 2) }}</div>
+                                        </td>
+                                        <td class="pe-4 text-end">
+                                            <button type="button" wire:click="removeItem({{ $index }})" class="btn btn-link text-danger p-0"><i class="fas fa-times-circle"></i></button>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Method:</span>
-                                <span class="badge bg-secondary">{{ $order->payment_method_name }}</span>
-                            </div>
-
-                            @if($order->payment_phone_number)
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Paid From:</span>
-                                <span class="fw-bold">{{ $order->payment_phone_number }}</span>
-                            </div>
-                            @endif
-
-                            @if($order->transaction_id)
-                            <div class="d-flex justify-content-between mb-2">
-                                <span>Transaction ID:</span>
-                                <span class="text-danger fw-bold">{{ $order->transaction_id }}</span>
-                            </div>
-                            @endif
-
-                            <div class="d-flex justify-content-between">
-                                <span>Payment Status:</span>
-                                <span class="badge {{ $order->payment_status->badgeColor() }}">
-                                    {{ $order->payment_status->label() }}
-                                </span>
-                            </div>
-
-                            @if($order->paymentMethod && $order->paymentMethod->instructions)
-                            <div class="mt-3 p-2 bg-light rounded border-start border-4 border-info">
-                                <small class="d-block fw-bold text-info mb-1">Method Instructions:</small>
-                                <small class="text-muted">{!! nl2br(e($order->paymentMethod->instructions)) !!}</small>
-                            </div>
-                            @endif
+                        <div class="p-3 bg-light border-top">
+                            <button type="button" wire:click="addItem" class="btn btn-white btn-sm border fw-bold px-3 shadow-sm text-primary">
+                                <i class="fas fa-plus me-1"></i> Add Line Item
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- Payment Info -->
 
-
-            <!-- Management Form -->
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-primary text-white py-3">
-                    <h5 class="mb-0">Update Order</h5>
-                </div>
-                <div class="card-body">
-                    <form wire:submit.prevent="updateOrder">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Order Status</label>
-                            <select class="form-select" wire:model="orderStatus">
-                                @foreach($orderStatuses as $status)
-                                <option value="{{ $status->value }}">{{ $status->label() }}</option>
-                                @endforeach
+            <!-- Sidebar Summary -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-light border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0 text-primary">Summary</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted">Courier Service</label>
+                            <select wire:model="data.courier_id" class="form-select shadow-none border-light-subtle mb-3">
+                                <option value="">Select Courier</option>
+                                @foreach($couriers as $c) <option value="{{ $c->id }}">{{ $c->name }}</option> @endforeach
                             </select>
-                        </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Payment Status</label>
-                            <select class="form-select" wire:model="paymentStatus">
-                                @foreach($paymentStatuses as $pStatus)
-                                <option value="{{ $pStatus->value }}">{{ $pStatus->label() }}</option>
-                                @endforeach
-                            </select>
+                            <div class="d-flex justify-content-between mb-2 small text-muted">
+                                <span>Subtotal</span>
+                                <span>৳{{ number_format($data['subtotal'], 2) }}</span>
+                            </div>
+                            <div class="row g-2 mb-2 align-items-center">
+                                <div class="col-7 small text-muted">Delivery Fee</div>
+                                <div class="col-5"><input type="number" wire:model.live="data.delivery_fee" class="form-control form-control-sm text-end border-light-subtle shadow-none"></div>
+                            </div>
+                            <div class="row g-2 mb-3 align-items-center">
+                                <div class="col-7 small text-muted">Manual Discount</div>
+                                <div class="col-5"><input type="number" wire:model.live="data.discount" class="form-control form-control-sm text-end border-light-subtle shadow-none"></div>
+                            </div>
+                            <hr class="opacity-50">
+                            <div class="d-flex justify-content-between mb-4">
+                                <h5 class="fw-bold mb-0">Total</h5>
+                                <h5 class="fw-bold text-primary mb-0">৳{{ number_format($data['total_amount'], 2) }}</h5>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold">Amount Paid (Advance)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-light-subtle small">৳</span>
+                                    <input type="number" wire:model.live="data.paid_amount" class="form-control border-light-subtle shadow-none fw-bold text-success">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Tracking Number</label>
-                            <input type="text" class="form-control" wire:model="trackingNumber" placeholder="e.g. DH123456">
+                            <label class="form-label small fw-bold text-muted mb-2">Order Status</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach($statuses as $status)
+                                <button type="button" wire:click="$set('data.status', '{{ $status->value }}')"
+                                    class="status-btn {{ $data['status'] == $status->value ? 'active' : '' }}">
+                                    {{ $status->label() }}
+                                </button>
+                                @endforeach
+                            </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100 py-2">
-                            <span wire:loading.remove wire:target="updateOrder">
-                                <i class="fas fa-save me-2"></i> Save Changes
-                            </span>
-                            <span wire:loading wire:target="updateOrder">
-                                <span class="spinner-border spinner-border-sm me-2"></span> Updating...
-                            </span>
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow">
+                            <i class="fas fa-check-circle me-1"></i> {{ $isEditMode ? 'Update Order' : 'Place Order' }}
                         </button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
+
+    <style>
+        .hover-light:hover {
+            background-color: #f8fafc;
+        }
+
+        .transition {
+            transition: all 0.2s ease;
+        }
+
+        .status-btn {
+            border: 1px solid #dee2e6;
+            background: #fff;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .status-btn.active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+        }
+
+        .form-select,
+        .form-control {
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .card {
+            border-radius: 12px;
+        }
+    </style>
 </div>

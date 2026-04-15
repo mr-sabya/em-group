@@ -1,287 +1,244 @@
-<div class="">
+<div>
     <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h2 class="h4 fw-bold mb-0">Orders</h2>
-            <!-- Added Tenant Indicator -->
-            <small class="text-muted">Managing for: <strong class="text-info">{{ $this->currentTenant->name ?? 'Unknown Store' }}</strong></small>
+    <div class="row align-items-center mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item text-muted small"><i class="fas fa-store me-1"></i> {{ $this->currentTenant->name ?? 'Store' }}</li>
+                    <li class="breadcrumb-item active small" aria-current="page">Orders</li>
+                </ol>
+            </nav>
+            <h1 class="h3 fw-bold  mb-0">Order Management</h1>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <!-- Avatars -->
-            <div class="avatar-group d-flex me-3">
-                <span class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center border-white" style="width:32px; height:32px; font-size:12px; border:2px solid #fff;">J</span>
-                <span class="avatar bg-danger text-white rounded-circle d-flex align-items-center justify-content-center border-white" style="width:32px; height:32px; font-size:12px; margin-left:-10px; border:2px solid #fff;">R</span>
-                <span class="avatar bg-info text-white rounded-circle d-flex align-items-center justify-content-center border-white" style="width:32px; height:32px; font-size:12px; margin-left:-10px; border:2px solid #fff;">S</span>
-                <span class="avatar bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center border-white" style="width:32px; height:32px; font-size:12px; margin-left:-10px; border:2px solid #fff;">+1</span>
-            </div>
-            <button class="btn btn-white border shadow-sm btn-sm px-2"><i class="fas fa-sliders-h text-info"></i></button>
-
-            <!-- ACTION DROPDOWN -->
+        <div class="col-auto d-flex gap-2">
             <div class="dropdown">
-                <button class="btn btn-outline-info btn-sm px-4 dropdown-toggle fw-bold" type="button" data-bs-toggle="dropdown">Action</button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 mt-2" style="min-width: 240px; font-size: 14px;">
-                    <li><a class="dropdown-item py-2 text-muted opacity-50" href="#"><i class="fas fa-exchange-alt me-2"></i> Change Status</a></li>
-                    <li><button class="dropdown-item py-2" wire:click="exportCSV"><i class="fas fa-print me-2"></i> Print Invoice</button></li>
-                    <li><button class="dropdown-item py-2" wire:click="exportCSV"><i class="fas fa-file-csv me-2"></i> Export As CSV</button></li>
-                    <li><a class="dropdown-item py-2" href="#"><i class="fas fa-file-export me-2"></i> Export Summary</a></li>
-                    <li><a class="dropdown-item py-2" href="#"><i class="fas fa-upload me-2"></i> Upload Orders</a></li>
-                    <li class="border-bottom pb-2 mb-2"><a class="dropdown-item py-2 text-muted opacity-50" href="#"><i class="far fa-calendar-alt me-2"></i> Update Shipping Date</a></li>
-
-                    <li class="px-3 fw-bold text-dark d-flex align-items-center"><i class="fas fa-angle-double-right me-2 text-secondary" style="font-size: 18px;"></i> Fast Action</li>
-                    <li class="px-2 mt-1">
-                        <button class="btn btn-secondary w-100 text-white py-2 shadow-sm border-0 fw-bold d-flex align-items-center justify-content-center"
-                            wire:click="approveSelected" wire:confirm="Approve all selected orders?" style="background-color: #ccc;">
-                            <i class="far fa-check-circle me-2 fs-5"></i> Approve Order(s)
-                        </button>
-                    </li>
+                <button class="btn btn-white border shadow-sm dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown">
+                    Bulk Actions
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                    <li><button class="dropdown-item py-2" wire:click="bulkConfirm"><i class="fas fa-check-circle me-2 text-success opacity-75"></i> Mark as Confirmed</button></li>
+                    <li><button class="dropdown-item py-2" wire:click="exportCSV"><i class="fas fa-file-export me-2 text-primary opacity-75"></i> Export Selected (CSV)</button></li>
                 </ul>
             </div>
-            <a href="#" wire:navigate class="btn btn-info text-white shadow-sm btn-sm px-3 fw-bold">Create Order</a>
+            <a class="btn btn-primary px-4 fw-bold shadow-sm border-0" href="{{ route('orders.create') }}" wire:navigate>
+                <i class="fas fa-plus me-1"></i> Create Order
+            </a>
         </div>
     </div>
 
-    <!-- 10 Status Tabs -->
-    <div class="d-flex flex-nowrap gap-3 mb-3 border-bottom pb-2 overflow-auto no-scrollbar bg-white p-2 rounded shadow-sm">
-        <div class="d-flex align-items-center cursor-pointer px-2" wire:click="setTab('all')">
-            <span class="{{ $activeTab == 'all' ? 'text-info fw-bold border-bottom border-info border-2 pb-1' : 'text-secondary' }}">All Orders</span>
-            <span class="badge bg-secondary bg-opacity-10 text-dark ms-2">{{ $counts['all'] }}</span>
+    <!-- Status Navigation Tabs -->
+    <div class="order-tabs-container mb-4">
+        <div class="d-flex overflow-auto gap-2 pb-2">
+            <button wire:click="setTab('all')"
+                class="tab-pill {{ $activeTab == 'all' ? 'active' : '' }}">
+                All <span class="count">{{ $counts['all'] }}</span>
+            </button>
+            @foreach($orderStatuses as $status)
+            <button wire:click="setTab('{{ $status->value }}')"
+                class="tab-pill {{ $activeTab == $status->value ? 'active' : '' }}">
+                {{ $status->label() }}
+                <span class="count">{{ $counts[$status->value] ?? 0 }}</span>
+            </button>
+            @endforeach
         </div>
-        @foreach($orderStatuses as $status)
-        <div class="d-flex align-items-center cursor-pointer px-2" wire:click="setTab('{{ $status->value }}')">
-            <span class="{{ $activeTab == $status->value ? 'text-info fw-bold border-bottom border-info border-2 pb-1' : 'text-secondary' }}">{{ $status->label() }}</span>
-            <span class="badge {{ $activeTab == $status->value ? 'bg-info text-white' : 'bg-secondary bg-opacity-10 text-dark' }} ms-2">{{ $counts[$status->value] }}</span>
-        </div>
-        @endforeach
     </div>
 
-    <!-- Duplicate Alert -->
-    <div class="alert bg-warning bg-opacity-10 border-warning border-opacity-25 d-flex align-items-center py-2 mb-3 shadow-sm">
-        <input type="checkbox" wire:model.live="filterDuplicatePhones" class="form-check-input me-2">
-        <span class="small text-dark">Multiple orders <span class="badge bg-info">0</span> with the same phone number <span class="badge bg-warning text-dark">0</span></span>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="card border-0 shadow-sm mb-2">
-        <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
-            <div class="d-flex gap-2 align-items-center">
-                <button class="btn btn-light border btn-sm shadow-sm" wire:click="$refresh"><i class="fas fa-sync-alt"></i></button>
-
-                <!-- FILTER COLUMN DROPDOWN -->
-                <div class="dropdown">
-                    <button class="btn btn-light border btn-sm dropdown-toggle px-3 shadow-sm" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                        <i class="fas fa-sliders-h me-1 text-info"></i> Filter Column
-                    </button>
-                    <div class="dropdown-menu shadow border-0 p-3" style="min-width: 220px;">
-                        <h6 class="dropdown-header ps-0 text-dark fw-bold mb-2">Columns</h6>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input custom-check" type="checkbox" id="col_all" wire:model.live="selectAllColumns">
-                            <label class="form-check-label fw-bold" for="col_all">Select All</label>
-                        </div>
-                        @foreach(['invoice_no' => 'Invoice No', 'date' => 'Date', 'customer' => 'Customer', 'pickup_address' => 'Pick Up Address', 'payment_info' => 'Payments Info', 'delivery_partner' => 'Delivery Partner', 'delivery_fee' => 'Delivery Fee', 'internal_notes' => 'Internal Notes'] as $key => $label)
-                        <div class="form-check mb-1">
-                            <input class="form-check-input custom-check" type="checkbox" id="col_{{ $key }}" wire:model.live="columns.{{ $key }}">
-                            <label class="form-check-label" for="col_{{ $key }}">{{ $label }}</label>
-                        </div>
-                        @endforeach
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group search-group">
+                        <span class="input-group-text border-end-0 bg-transparent text-dark"><i class="fas fa-search"></i></span>
+                        <input type="text" wire:model.live.debounce.300ms="search"
+                            class="form-control border-start-0 ps-0 shadow-none"
+                            placeholder="Search by name, phone or #order id...">
                     </div>
                 </div>
-
-                <button class="btn btn-info text-white btn-sm px-3 fw-bold shadow-sm">Picking</button>
-                <span class="small text-muted ms-2">Show</span>
-                <select wire:model.live="perPage" class="form-select form-select-sm w-auto">
-                    <option value="10">10</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
+                <div class="col-md-7 d-flex justify-content-md-end align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="small text-muted text-nowrap font-medium">Items per page:</span>
+                        <select wire:model.live="perPage" class="form-select form-select-sm border-light-subtle shadow-none w-auto">
+                            <option value="10">10</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-            <div class="small">{{ $orders->links() }}</div>
         </div>
     </div>
 
     <!-- Data Table -->
-    <div class="card border-0 shadow-sm overflow-hidden">
+    <div class="card border-0 shadow-sm">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
-                <thead class="bg-light text-muted small text-uppercase">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
                     <tr>
-                        <th width="40" class="ps-3"><input type="checkbox" class="form-check-input" wire:model.live="selectAll"></th>
-                        @if($columns['invoice_no']) <th>Invoice No</th> @endif
-                        @if($columns['date']) <th>Date</th> @endif
-                        @if($columns['customer']) <th>Customer</th> @endif
-                        @if($columns['pickup_address']) <th>Pick Up Address</th> @endif
-                        @if($columns['payment_info']) <th>Payments Info</th> @endif
-                        @if($columns['delivery_partner']) <th>Delivery Partner</th> @endif
-                        @if($columns['delivery_fee']) <th>Delivery Fee</th> @endif
-                        @if($columns['internal_notes']) <th class="text-center">Notes</th> @endif
+                        <th width="40" class="ps-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input custom-check" wire:model.live="selectAll">
+                            </div>
+                        </th>
+                        <th>Order Details</th>
+                        <th>Customer</th>
+                        <th>Source</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Action</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white">
+                <tbody>
                     @forelse ($orders as $order)
-                    <tr class="border-bottom {{ in_array($order->id, $selectedOrders) ? 'table-warning bg-opacity-10' : '' }}">
-                        <td class="ps-3"><input type="checkbox" class="form-check-input" value="{{ $order->id }}" wire:model.live="selectedOrders"></td>
-
-                        @if($columns['invoice_no'])
-                        <td>
-                            <div class="d-flex gap-2 mb-1 text-muted opacity-50">
-                                <i class="fas fa-info-circle cursor-pointer" title="Details"></i>
-                                <i class="fas fa-copy cursor-pointer" onclick="navigator.clipboard.writeText('{{ $order->order_number }}')"></i>
-                                <i class="fas fa-print"></i>
-                                <i class="fas fa-edit cursor-pointer" data-bs-toggle="modal" data-bs-target="#status-update-modal" wire:click="openStatusUpdateModal({{ $order->id }})"></i>
-                            </div>
-                            <div class="fw-bold text-info">{{ $order->order_number }}</div>
-                            <div class="d-flex gap-1 mt-1">
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 py-0" style="font-size: 10px;">Website</span>
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-0" style="font-size: 10px;">Woo</span>
+                    <tr class="{{ in_array($order->id, $selectedOrders) ? 'row-selected' : '' }}">
+                        <td class="ps-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input custom-check" value="{{ $order->id }}" wire:model.live="selectedOrders">
                             </div>
                         </td>
-                        @endif
-
-                        @if($columns['date'])
                         <td>
-                            <div><span class="fw-bold text-dark">Created</span> {{ $order->placed_at?->format('M d, Y h:i A') }}</div>
-                            <div class="text-muted"><span class="fw-bold">Shipping</span> {{ $order->shipped_at ? $order->shipped_at->format('M d, Y h:i A') : '---' }}</div>
+                            <div class="fw-bold text-primary mb-0" style="font-family: 'Monaco', 'Consolas', monospace;">#{{ $order->order_number }}</div>
+                            <div class="text-muted small-text">{{ $order->placed_at->format('M d, Y • h:i A') }}</div>
                         </td>
-                        @endif
-
-                        @if($columns['customer'])
                         <td>
-                            <div class="fw-bold text-info fs-6">{{ $order->getCustomerNameAttribute() }}</div>
-                            <div class="d-flex align-items-center gap-1 my-1">
-                                <span class="badge bg-warning text-dark px-1" style="font-size: 10px;">NEW</span>
-                                <i class="fas fa-info-circle text-muted" style="font-size: 11px;"></i>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="fw-bold text-dark">{{ $order->billing_phone }}</span>
-                                <i class="fas fa-copy text-muted cursor-pointer" style="font-size: 11px;"></i>
-                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $order->billing_phone) }}" target="_blank" class="text-success">
+                            <div class="fw-semibold text-dark">{{ $order->name }}</div>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span class="text-muted small">{{ $order->phone }}</span>
+                                <a href="https://wa.me/{{ preg_replace('/\D/', '', $order->phone) }}" target="_blank" class="whatsapp-link">
                                     <i class="fab fa-whatsapp"></i>
                                 </a>
                             </div>
-                            <div class="text-muted small lh-sm" style="max-width: 180px;">{{ $order->billing_address_line_1 }}, {{ $order->shippingCity?->name }}</div>
                         </td>
-                        @endif
-
-                        @if($columns['pickup_address'])
                         <td>
-                            <span class="badge bg-light text-muted border px-2 mb-1" style="font-size: 10px;">Warehouse</span>
-                            <div class="text-info fw-bold">{{ $order->vendor->name ?? 'M3Food' }}</div>
+                            @php
+                            $sourceConfig = match($order->source->value) {
+                            'whatsapp' => ['icon' => 'fab fa-whatsapp', 'class' => 'source-whatsapp'],
+                            'facebook' => ['icon' => 'fab fa-facebook', 'class' => 'source-facebook'],
+                            'landing_page' => ['icon' => 'fas fa-desktop', 'class' => 'source-web'],
+                            default => ['icon' => 'fas fa-globe', 'class' => 'source-default']
+                            };
+                            @endphp
+                            <span class="source-badge {{ $sourceConfig['class'] }}">
+                                <i class="{{ $sourceConfig['icon'] }} me-1"></i> {{ ucfirst(str_replace('_', ' ', $order->source->value)) }}
+                            </span>
                         </td>
-                        @endif
-
-                        @if($columns['payment_info'])
                         <td>
-                            <div class="text-muted">Sales Amount: BDT {{ number_format($order->total_amount, 2) }}</div>
-                            <div class="text-muted">Paid Amount: BDT 0.00</div>
-                            <div class="fw-bold text-dark">Due Amount: BDT {{ number_format($order->total_amount, 2) }}</div>
-                        </td>
-                        @endif
-
-                        @if($columns['delivery_partner'])
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:22px; height:22px;">
-                                    <i class="fas fa-caret-down text-white" style="font-size: 10px;"></i>
-                                </div>
-                                <span class="fw-bold text-dark">Steadfast</span>
+                            <div class="small">
+                                <div class="fw-bold text-dark">৳{{ number_format($order->total_amount, 2) }}</div>
+                                <div class="text-success small-text">Paid: ৳{{ number_format($order->paid_amount, 2) }}</div>
                             </div>
                         </td>
-                        @endif
-
-                        @if($columns['delivery_fee'])
-                        <td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 10px;">Regular</span></td>
-                        @endif
-
-                        @if($columns['internal_notes'])
-                        <td class="text-center">
-                            <div class="d-flex gap-3 justify-content-center">
-                                <i class="far fa-file-alt text-info cursor-pointer fs-5" title="View Note"></i>
-                                <i class="fas fa-plus text-muted cursor-pointer fs-5" title="Add Note"></i>
-                            </div>
+                        <td>
+                            @php
+                            $statusClass = match($order->status->value) {
+                            'pending' => 'status-pending',
+                            'confirmed' => 'status-confirmed',
+                            'shipped' => 'status-shipped',
+                            'delivered' => 'status-delivered',
+                            'canceled', 'returned' => 'status-danger',
+                            default => 'status-default'
+                            };
+                            @endphp
+                            <span class="status-pill {{ $statusClass }}">
+                                {{ $order->status->label() }}
+                            </span>
                         </td>
-                        @endif
+                        <td class="text-end pe-4">
+                            <button wire:click="openStatusUpdateModal({{ $order->id }})"
+                                class="btn btn-icon btn-light"
+                                data-bs-toggle="modal" data-bs-target="#statusModal">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="10" class="py-5 text-center text-muted">No orders found matching your criteria.</td>
+                        <td colspan="7" class="py-5 text-center">
+                            <div class="py-4">
+                                <i class="fas fa-box-open fa-3x text-light-emphasis mb-3"></i>
+                                <h5 class="text-muted fw-normal">No orders found matching your criteria</h5>
+                                <button wire:click="$set('search', '')" class="btn btn-link btn-sm text-decoration-none">Clear search filters</button>
+                            </div>
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        @if($orders->hasPages())
+        <div class="card-footer bg-white border-top-0 py-3">
+            {{ $orders->links() }}
+        </div>
+        @endif
     </div>
 
-    <!-- Modals (Preserved from original) -->
-    <div class="modal fade" id="status-update-modal" tabindex="-1" wire:ignore.self x-data="{ bootstrapModal: null }" x-init="bootstrapModal = new bootstrap.Modal($el)" @close-modal-now.window="bootstrapModal.hide()">
+    <!-- Status Modal (Customized) -->
+    <div wire:ignore.self class="modal fade" id="statusModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow border-0">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold">Update Order Status</h5>
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold px-2">Update Order Status</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form wire:submit.prevent="updateOrderStatus">
-                    <div class="modal-body py-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Order Status</label>
-                            <select class="form-select" wire:model="newOrderStatus">
-                                @foreach($orderStatuses as $status) <option value="{{ $status->value }}">{{ $status->label() }}</option> @endforeach
-                            </select>
-                        </div>
-                        <div class="mb-0">
-                            <label class="form-label fw-bold">Payment Status</label>
-                            <select class="form-select" wire:model="newPaymentStatus">
-                                @foreach($paymentStatuses as $status) <option value="{{ $status->value }}">{{ $status->label() }}</option> @endforeach
-                            </select>
-                        </div>
+                <div class="modal-body p-4">
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <small class="text-muted d-block mb-1">Changing status for</small>
+                        <span class="fw-bold text-primary">Order #{{ $updateOrderId }}</span>
                     </div>
-                    <div class="modal-footer bg-light border-0">
-                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-info text-white px-4 fw-bold">Update Order</button>
-                    </div>
-                </form>
+                    <label class="form-label small fw-bold text-uppercase text-muted mb-2">New Status</label>
+                    <select class="form-select border-2 py-2 shadow-none" wire:model="newOrderStatus">
+                        @foreach($orderStatuses as $status)
+                        <option value="{{ $status->value }}">{{ $status->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light px-4 fw-semibold" data-bs-dismiss="modal">Close</button>
+                    <button type="button" wire:click="updateOrderStatus" class="btn btn-primary px-4 fw-bold">Update Status</button>
+                </div>
             </div>
         </div>
     </div>
 
-
+    <!-- Professional CSS Overrides -->
     <style>
-        .cursor-pointer {
-            cursor: pointer;
-        }
-
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-
-        .table thead th {
-            font-weight: 600;
-            background: #f8f9fa;
-            color: #666;
-            border-bottom: 1px solid #eee;
-        }
-
-        .btn-info {
-            background-color: #00bcd4;
-            border-color: #00bcd4;
-        }
-
-        .text-info {
-            color: #00bcd4 !important;
-        }
-
-        .custom-check:checked {
-            background-color: #00bcd4;
-            border-color: #00bcd4;
-        }
-
-        .dropdown-menu {
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .form-check-label {
+        /* Tabs Styling */
+        .tab-pill {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 100px;
+            white-space: nowrap;
+            color: #64748b;
             font-size: 14px;
-            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-pill:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .tab-pill.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .tab-pill .count {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+
+        .tab-pill.active .count {
+            background: rgba(255, 255, 255, 0.2);
         }
     </style>
-
 </div>

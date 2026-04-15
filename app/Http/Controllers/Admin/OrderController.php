@@ -20,14 +20,20 @@ class OrderController extends Controller
         return view('admin.orders.invoice', compact('orderId'));
     }
 
-    // manage view
-    public function manage($orderId)
+    // create view
+    public function create()
     {
-        $order = Order::findOrFail($orderId);
-        return view('admin.orders.manage', compact('order'));
+        return view('admin.orders.create');
     }
 
-    // 
+    // edit view
+    public function edit($orderId)
+    {
+        $order = Order::findOrFail($orderId);
+        return view('admin.orders.edit', compact('order'));
+    }
+
+    // cancel reasons view
     public function cancelReasons()
     {
         return view('admin.orders.cancel-reasons');
