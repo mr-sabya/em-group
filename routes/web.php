@@ -18,7 +18,11 @@ Route::middleware('guest:admin')->group(function () {
 });
 
 Route::middleware('auth:admin')->prefix('dashboard')->group(function () {
-    Route::get('/', [App\Http\Controllers\Admin\HomeController::class, 'index'])->name('dashboard');
+
+    // dashboard
+    Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard.index');
+
+    Route::get('/tenant', [App\Http\Controllers\Admin\HomeController::class, 'index'])->name('dashboard.tenant');
 
     // create tenant
     Route::get('/tenant/create', [App\Http\Controllers\Admin\TenantController::class, 'create'])->name('tenants.create');

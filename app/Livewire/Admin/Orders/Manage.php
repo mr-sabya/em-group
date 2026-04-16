@@ -11,6 +11,7 @@ use App\Models\UserInfo;
 use App\Models\Courier;
 use App\Enums\OrderStatus;
 use App\Enums\OrderSource;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -75,7 +76,7 @@ class Manage extends Component
             }
         } else {
             $this->addItem();
-            $this->data['user_id'] = auth()->id();
+            $this->data['user_id'] = Auth::id();
         }
     }
 
@@ -208,7 +209,7 @@ class Manage extends Component
                 ['id' => $this->orderId],
                 array_merge($this->data, [
                     'user_id' => $userId, // Linked customer
-                    'admin_id' => auth()->id(), // Current admin
+                    'admin_id' => Auth::id(), // Current admin
                     'tenant_id' => session('active_tenant_id')
                 ])
             );

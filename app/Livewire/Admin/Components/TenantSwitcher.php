@@ -27,7 +27,7 @@ class TenantSwitcher extends Component
         session(['active_tenant_id' => $id]);
 
         // Redirect to dashboard or refresh page to apply Global Scopes
-        return redirect()->route('admin.dashboard');
+        return $this->redirect(route('dashboard.tenant'), navigate: true);
     }
 
     public function render()

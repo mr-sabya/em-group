@@ -1,7 +1,7 @@
 <div class="app-menu navbar-menu">
     <!-- LOGO -->
     <div class="navbar-brand-box">
-        <a href="{{ route('dashboard') }}" class="logo logo-dark">
+        <a href="{{ route('dashboard.index') }}" class="logo logo-dark">
             <span class="logo-sm">
                 <img src="{{ url('assets/images/logo-sm.png') }}" alt="" height="26">
             </span>
@@ -9,7 +9,7 @@
                 <img src="{{ isset($settings['dark_logo']) ? asset('storage/' . $settings['dark_logo']) : url('assets/images/logo-dark.png') }}" alt="" height="26">
             </span>
         </a>
-        <a href="{{ route('dashboard') }}" class="logo logo-light">
+        <a href="{{ route('dashboard.index') }}" class="logo logo-light">
             <span class="logo-sm">
                 <img src="{{ url('assets/images/logo-sm.png') }}" alt="" height="26">
             </span>
@@ -29,10 +29,67 @@
 
                 <li class="menu-title"><span data-key="t-menu">Menu</span></li>
 
+                <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-system">System</span></li>
+
+                <!-- dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('dashboard.*') ? 'active' : 'collapsed' }}" href="{{ route('dashboard.index') }}" wire:navigate>
+                        <i class="ri-dashboard-line"></i> <span data-key="t-dashboard">Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Users -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('users.*') ? 'active' : 'collapsed' }}" href="#userManage" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('users.*') ? 'true' : 'false' }}">
+                        <i class="bi bi-people"></i> <span data-key="t-users">Users</span>
+                    </a>
+                    <div class="collapse menu-dropdown {{ request()->routeIs('users.*') ? 'show' : '' }}" id="userManage">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('users.customers.index') }}" class="nav-link {{ request()->routeIs('users.customers.*') ? 'active' : '' }}" wire:navigate> Customers </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('users.admins.index') }}" class="nav-link {{ request()->routeIs('users.admins.*') ? 'active' : '' }}" wire:navigate> Admins </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('users.roles.index') }}" class="nav-link {{ request()->routeIs('users.roles.*') ? 'active' : '' }}" wire:navigate> Roles </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('users.permissions.index') }}" class="nav-link {{ request()->routeIs('users.permissions.*') ? 'active' : '' }}" wire:navigate> Permissions </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+
+                <!-- Locations -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link {{ request()->routeIs('locations.*') ? 'active' : 'collapsed' }}" href="#locationManage" data-bs-toggle="collapse" role="button">
+                        <i class="bi bi-geo-alt"></i> <span data-key="t-locations">Locations</span>
+                    </a>
+                    <div class="collapse menu-dropdown {{ request()->routeIs('locations.*') ? 'show' : '' }}" id="locationManage">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('locations.countries') }}" class="nav-link {{ request()->routeIs('locations.countries') ? 'active' : '' }}" wire:navigate> Countries </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('locations.states') }}" class="nav-link {{ request()->routeIs('locations.states') ? 'active' : '' }}" wire:navigate> States </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('locations.cities') }}" class="nav-link {{ request()->routeIs('locations.cities') ? 'active' : '' }}" wire:navigate> Cities </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- for current tenant -->
+
+                @if($this->currentTenant)
+                <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-management">Store: {{ $this->currentTenant->name }}</span></li>
                 <!-- Dashboard -->
                 <li class="nav-item">
-                    <a href="{{ route('dashboard') }}" class="nav-link menu-link {{ Route::is('dashboard') ? 'active' : '' }}" wire:navigate>
-                        <i class="bi bi-speedometer2"></i> <span data-key="t-dashboard">Dashboard</span>
+                    <a href="{{ route('dashboard.tenant') }}" class="nav-link menu-link {{ Route::is('dashboard.tenant') ? 'active' : '' }}" wire:navigate>
+                        <i class="bi bi-speedometer2"></i> <span data-key="t-dashboard">Dashboard ({{ $this->currentTenant->name }})</span>
                     </a>
                 </li>
 
@@ -115,29 +172,6 @@
                     </a>
                 </li>
 
-                <!-- Users -->
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('users.*') ? 'active' : 'collapsed' }}" href="#userManage" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('users.*') ? 'true' : 'false' }}">
-                        <i class="bi bi-people"></i> <span data-key="t-users">Users</span>
-                    </a>
-                    <div class="collapse menu-dropdown {{ request()->routeIs('users.*') ? 'show' : '' }}" id="userManage">
-                        <ul class="nav nav-sm flex-column">
-                            <li class="nav-item">
-                                <a href="{{ route('users.customers.index') }}" class="nav-link {{ request()->routeIs('users.customers.*') ? 'active' : '' }}" wire:navigate> Customers </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('users.admins.index') }}" class="nav-link {{ request()->routeIs('users.admins.*') ? 'active' : '' }}" wire:navigate> Admins </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('users.roles.index') }}" class="nav-link {{ request()->routeIs('users.roles.*') ? 'active' : '' }}" wire:navigate> Roles </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('users.permissions.index') }}" class="nav-link {{ request()->routeIs('users.permissions.*') ? 'active' : '' }}" wire:navigate> Permissions </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-
                 <!-- Blog -->
                 <li class="nav-item">
                     <a class="nav-link menu-link {{ request()->routeIs('blog.*') ? 'active' : 'collapsed' }}" href="#blogManage" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('blog.*') ? 'true' : 'false' }}">
@@ -153,26 +187,6 @@
                             </li>
                             <li class="nav-item">
                                 <a href="{{ route('blog.post.index') }}" class="nav-link {{ request()->routeIs('blog.post.index') ? 'active' : '' }}" wire:navigate> Post </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-
-                <!-- Locations -->
-                <li class="nav-item">
-                    <a class="nav-link menu-link {{ request()->routeIs('locations.*') ? 'active' : 'collapsed' }}" href="#locationManage" data-bs-toggle="collapse" role="button">
-                        <i class="bi bi-geo-alt"></i> <span data-key="t-locations">Locations</span>
-                    </a>
-                    <div class="collapse menu-dropdown {{ request()->routeIs('locations.*') ? 'show' : '' }}" id="locationManage">
-                        <ul class="nav nav-sm flex-column">
-                            <li class="nav-item">
-                                <a href="{{ route('locations.countries') }}" class="nav-link {{ request()->routeIs('locations.countries') ? 'active' : '' }}" wire:navigate> Countries </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('locations.states') }}" class="nav-link {{ request()->routeIs('locations.states') ? 'active' : '' }}" wire:navigate> States </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('locations.cities') }}" class="nav-link {{ request()->routeIs('locations.cities') ? 'active' : '' }}" wire:navigate> Cities </a>
                             </li>
                         </ul>
                     </div>
@@ -195,8 +209,6 @@
                     </div>
                 </li>
 
-                <li class="menu-title"><i class="ri-more-fill"></i> <span data-key="t-system">System</span></li>
-
                 <li class="nav-item">
                     <a href="{{ route('settings.index') }}" class="nav-link menu-link {{ request()->routeIs('settings.index') ? 'active' : '' }}" wire:navigate>
                         <i class="bi bi-gear"></i> <span data-key="t-settings">Settings</span>
@@ -216,6 +228,10 @@
                         <i class="bi bi-truck"></i> <span data-key="t-couriers">Couriers</span>
                     </a>
                 </li>
+                @endif
+                <!-- for all tenant -->
+
+
 
             </ul>
         </div>

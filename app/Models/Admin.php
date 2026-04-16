@@ -92,6 +92,15 @@ class Admin extends Authenticatable
         return true;
     }
 
+
+    /**
+     * The tenants that the admin is assigned to manage.
+     */
+    public function tenants()
+    {
+        return $this->belongsToMany(Tenant::class, 'admin_tenant', 'admin_id', 'tenant_id');
+    }
+
     // orders relationship for top agents leaderboard
     public function orders()
     {

@@ -48,7 +48,7 @@ class Login extends Component
 
         // --- NEW MULTI-TENANT LOGIC END ---
 
-        return redirect()->route('dashboard');
+        return redirect()->route('dashboard.index');
     }
 
     public function render()

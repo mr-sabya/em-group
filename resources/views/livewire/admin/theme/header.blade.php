@@ -38,6 +38,11 @@
 
             <div class="d-flex align-items-center">
 
+                <!-- add new tenant -->
+                <a href="{{ route('tenants.create') }}" class="btn btn-sm btn-success me-2">
+                    <i class="bi bi-plus-lg"></i> Add Tenant
+                </a>
+
                 <!-- INSERT TENANT SWITCHER HERE -->
                 @if(\App\Models\Tenant::count() > 0)
                 <livewire:admin.components.tenant-switcher />
