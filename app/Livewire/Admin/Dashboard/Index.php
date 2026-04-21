@@ -9,6 +9,7 @@ use App\Models\User;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class Index extends Component
 {
@@ -40,15 +41,10 @@ class Index extends Component
      */
     public function switchTenant($tenantId)
     {
-        // 1. Validate the tenant exists
-        $tenant = \App\Models\Tenant::find($tenantId);
+        $tenant = Tenant::find($tenantId);
 
         if ($tenant) {
-            // 2. Set the session variable that your Global Scopes and Sidebar look for
             session(['active_tenant_id' => $tenant->id]);
-
-            // 3. Redirect to the dashboard (now filtered by this tenant)
-            // 'wire:navigate' compatible redirect
             return $this->redirectRoute('dashboard.tenant', navigate: true);
         }
 
@@ -66,14 +62,25 @@ class Index extends Component
             'total_users'   => User::count(),
         ];
 
-        // 2. Executive Admins with Assigned Tenants
-        // We filter admins who have the 'executive' role
-        $executives = Admin::role('executive', 'admin')
-            ->with(['tenants'])
-            ->withCount(['orders' => function ($q) {
-                $q->withoutGlobalScopes();
-            }])
-            ->get();
+        // 2. Executive Admins Logic
+        // We first check if the role record even exists to prevent Spatie "RoleDoesNotExist" exception
+        $roleExists = Role::where('name', 'executive')->where('guard_name', 'admin')->exists();
+
+        $executives = 0; // Default to 0
+
+        if ($roleExists) {
+            $executivesCollection = Admin::role('executive', 'admin')
+                ->with(['tenants'])
+                ->withCount(['orders' => function ($q) {
+                    $q->withoutGlobalScopes();
+                }])
+                ->get();
+
+            // If query returns results, use the collection, otherwise keep it as 0
+            if ($executivesCollection->isNotEmpty()) {
+                $executives = $executivesCollection;
+            }
+        }
 
         // 3. Tenant List with Performance
         $tenants = Tenant::with(['domains'])->get()->map(function ($t) {

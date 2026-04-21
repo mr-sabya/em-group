@@ -101,6 +101,9 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @if($executives === 0)
+                                <div class="alert alert-info">No executive accounts found.</div>
+                                @else
                                 @foreach($executives as $exec)
                                 <tr>
                                     <td>
@@ -114,6 +117,7 @@
                                     <td><span class="badge bg-info">{{ $exec->orders_count }} handled</span></td>
                                 </tr>
                                 @endforeach
+                                @endif
                             </tbody>
                         </table>
                     </div>
